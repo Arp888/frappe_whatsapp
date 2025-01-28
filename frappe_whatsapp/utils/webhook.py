@@ -83,7 +83,7 @@ def post():
                 else:
                     msg = "Silahkan ketikkan kata kunci"
 
-                send_response(sender, f"{msg}")
+                send_response(sender, msg)
 
             elif message_type == "reaction":
                 frappe.get_doc(
