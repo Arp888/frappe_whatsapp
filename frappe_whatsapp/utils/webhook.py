@@ -83,7 +83,7 @@ def post():
                 else:
                     msg = "Silahkan ketikkan kata kunci"
 
-                send_response(sender, msg)
+                send_response(sender, f"{msg}")
 
             elif message_type == "reaction":
                 frappe.get_doc(
@@ -305,7 +305,7 @@ def get_production_data():
 @frappe.whitelist(allow_guest=True)
 def get_yearly_production_data():
 
-    filters = frappe._dict({"site_name": "Pusaka Tanah Persada", "year": "2024"})
+    filters = frappe._dict({"site_name": "PT Pusaka Tanah Persada", "year": "2025"})
 
     current_year_data = get_current_year_production_data(filters)
 
