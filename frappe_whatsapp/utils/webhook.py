@@ -5,11 +5,19 @@ import json
 import time
 
 import frappe
-import frappe.utils
 import requests
 from frappe.integrations.utils import make_post_request
 from frappe.query_builder import Order
-from frappe.query_builder.functions import Extract, Sum
+from frappe.query_builder.functions import CombineDatetime, Extract, Sum
+from frappe.utils import (
+    cstr,
+    flt,
+    get_link_to_form,
+    get_time,
+    getdate,
+    nowdate,
+    nowtime,
+)
 from hcapp.mine_production.api.v1.get_yearly_production_data import get_dashboard_data
 from werkzeug.wrappers import Response
 
@@ -78,12 +86,15 @@ def post():
                 if text.lower() == "hello":
                     msg = "Hi there! How can I help you?"
                 elif text.lower() == "produksi":
-                    prod = get_production_data()
-                    msg = json.dumps(prod)
+                    prod = get_yearly_production_data()
+                    if prod:
+                        msg += f"*Total produksi (update {prod['last_posting_date']})*\n"
+                        for key in prod.data:
+                            msg += f"- {key} = {prod.data[key]["tonnage"]} {prod.data[key]["uom"]}\n"
                 else:
                     msg = "Silahkan ketikkan kata kunci"
 
-                send_response(sender, f"{msg}")
+                send_response(sender, msg)
 
             elif message_type == "reaction":
                 frappe.get_doc(
@@ -305,82 +316,29 @@ def get_production_data():
 @frappe.whitelist(allow_guest=True)
 def get_yearly_production_data():
 
-    filters = frappe._dict({"site_name": "PT Pusaka Tanah Persada", "year": "2025"})
+    filters = frappe._dict({"site_name": "Pusaka Tanah Persada", "year": "2024"})
 
     current_year_data = get_current_year_production_data(filters)
-
-    previous_year_data = get_previous_year_production_data(filters)
 
     if not current_year_data:
         return []
 
-    prod = frappe.qb.DocType("Site Daily Production Entry")
-
-    latest_data = (
-        frappe.qb.select(
-            prod.name,
-            prod.site_name,
-            prod.posting_date,
-            prod.posting_time,
-        )
-        .from_(prod)
-        .where(
-            (prod.docstatus == 1)
-            & (prod.site_name == filters.get("site_name"))
-            & (Extract("year", prod.posting_date) == filters.get("year"))
-        )
-        .orderby(prod.posting_date, order=Order.desc)
-        .orderby(prod.posting_time, order=Order.desc)
-        .limit(1)
-    ).run(as_dict=True)
-
     prod_data = {}
     for i, i_items in current_year_data.items():
         item = get_mining_item(i)
-        prod_data.setdefault(item.mining_item_name, {}).setdefault(
-            "current_year", {"tonnage": i_items["total_tonnage"], "uom": i_items["uom"]}
-        )
-        prod_data.setdefault(item.mining_item_name, {}).setdefault(
-            "previous_year", {"tonnage": 0, "uom": i_items["uom"]}
+        prod_data.setdefault(
+            item.mining_item_name,
+            {"tonnage": i_items["total_tonnage"], "uom": i_items["uom"]},
         )
 
-    if previous_year_data:
-        for j, j_items in previous_year_data.items():
-            item = get_mining_item(j)
-            prod_data[item.mining_item_name]["previous_year"]["tonnage"] = j_items[
-                "total_tonnage"
-            ]
-
-    for k, k_items in prod_data.items():
-        status = "neutral"
-        percentage = 0
-
-        if k_items["current_year"]["tonnage"] > k_items["previous_year"]["tonnage"]:
-            status = "up"
-        elif k_items["current_year"]["tonnage"] < k_items["previous_year"]["tonnage"]:
-            status = "down"
-
-        if k_items["previous_year"]["tonnage"] != 0:
-            percentage = round(
-                (
-                    k_items["current_year"]["tonnage"]
-                    - k_items["previous_year"]["tonnage"]
-                )
-                / k_items["previous_year"]["tonnage"]
-                * 100,
-                2,
-            )
-
-        prod_data.setdefault(k, {}).setdefault("status", status)
-        prod_data.setdefault(k, {}).setdefault("percentage", percentage)
+    latest_datetime = get_last_production_datetime(filters)
 
     return frappe._dict(
         {
-            "data": prod_data,
-            "additional_info": {
-                "last_posting_date": latest_data[0].posting_date,
-                "last_posting_time": latest_data[0].posting_time,
-            },
+            "prod_data": prod_data,
+            "last_posting_date": get_combine_datetime(
+                latest_datetime.posting_date, latest_datetime.posting_time
+            ),
         }
     )
 
@@ -440,49 +398,44 @@ def get_current_year_production_data(filters):
     return data_map
 
 
-def get_previous_year_production_data(filters):
+def get_last_production_datetime(filters):
     prod = frappe.qb.DocType("Site Daily Production Entry")
-    prod_detail = frappe.qb.DocType("Site Daily Production Entry Detail")
 
-    sum_tonnage = Sum(prod_detail.tonnage_by_tf).as_("tonnage_by_tf")
-
-    query = (
+    prod_query = (
         frappe.qb.select(
+            prod.name,
             prod.site_name,
-            prod.source_pit,
-            Extract("year", prod.posting_date).as_("year"),
-            prod_detail.mining_item_code,
-            prod_detail.mining_item_name,
-            sum_tonnage,
-            prod_detail.tonnage_by_tf_uom,
+            prod.posting_date,
+            prod.posting_time,
         )
-        .from_(prod_detail)
-        .join(prod)
-        .on(prod.name == prod_detail.parent)
+        .from_(prod)
         .where(
             (prod.docstatus == 1)
             & (prod.site_name == filters.get("site_name"))
-            & (
-                Extract("year", prod.posting_date)
-                == frappe.cint(filters.get("year")) - 1
-            )
+            & (Extract("year", prod.posting_date) == filters.get("year"))
         )
-        .orderby(prod.posting_date)
-        .groupby(prod_detail.mining_item_code)
-        .groupby(Extract("year", prod.posting_date))
+        .orderby(
+            CombineDatetime(prod.posting_date, prod.posting_time), order=Order.desc
+        )
+        .limit(1)
     )
+    p = prod_query.run(as_dict=True)
+    return p[0]
 
-    data = query.run(as_dict=True)
 
-    data_map = {}
-    for d in data:
-        item = get_mining_item(d.mining_item_code)
-        data_map.setdefault(
-            d.mining_item_code,
-            {"total_tonnage": d.tonnage_by_tf, "uom": item.mining_item_uom},
-        )
+def get_combine_datetime(posting_date, posting_time):
+    import datetime
 
-    return data_map
+    if isinstance(posting_date, str):
+        posting_date = getdate(posting_date)
+
+    if isinstance(posting_time, str):
+        posting_time = get_time(posting_time)
+
+    if isinstance(posting_time, datetime.timedelta):
+        posting_time = (datetime.datetime.min + posting_time).time()
+
+    return datetime.datetime.combine(posting_date, posting_time).replace(microsecond=0)
 
 
 def get_mining_item(item):
