@@ -88,9 +88,11 @@ def post():
                 elif text.lower() == "produksi":
                     prod = get_yearly_production_data()
                     if prod:
-                        msg += f"*Total produksi (update {prod['last_posting_date']})*\n"
-                        for key in prod.prod_data:
-                            msg += f"- {key} = {prod.prod_data[key]["tonnage"]} {prod.prod_data[key]["uom"]}\n"
+                        msg = f"*Total produksi (update {prod.last_posting_date})*\n"
+                        for key, val in prod.prod_data.items():
+                            msg += f"- {key} = {val['tonnage']} {val['uom']}\n"
+                    else:
+                        msg = "Data tidak tersedia"
                 else:
                     msg = "Silahkan ketikkan kata kunci"
 
@@ -286,31 +288,15 @@ def update_message_status(data):
 
 @frappe.whitelist(allow_guest=True)
 def get_production_data():
-    prod_data = get_yearly_production_data()
+    prod = get_yearly_production_data()
     # return prod_data.data
-    message = ""
-    if prod_data:
-        message += (
-            "Total Produksi (update "
-            + frappe.cstr(prod_data["additional_info"]["last_posting_date"])
-            + " "
-            + frappe.cstr(prod_data["additional_info"]["last_posting_time"])
-            + ")\n"
-        )
-        for key in prod_data.data:
+    msg = ""
+    if prod:
+        msg = f"*Total produksi (update {prod.last_posting_date})*\n"
+        for key, val in prod.prod_data.items():
+            msg += f"- {key} = {val['tonnage']} {val['uom']}\n"
 
-            message += "- " + key + " =\n"
-            # for d, val in data.items():
-            #     if d == "current_year":
-            #         message ==
-            message += (
-                frappe.cstr(prod_data.data[key]["current_year"]["tonnage"])
-                + " "
-                + prod_data.data[key]["current_year"]["uom"]
-                + "\n"
-            )
-
-    return message
+    return msg
 
 
 @frappe.whitelist(allow_guest=True)
