@@ -89,8 +89,8 @@ def post():
                     prod = get_yearly_production_data()
                     if prod:
                         msg += f"*Total produksi (update {prod['last_posting_date']})*\n"
-                        for key in prod.data:
-                            msg += f"- {key} = {prod.data[key]["tonnage"]} {prod.data[key]["uom"]}\n"
+                        for key in prod.prod_data:
+                            msg += f"- {key} = {prod.prod_data[key]["tonnage"]} {prod.prod_data[key]["uom"]}\n"
                 else:
                     msg = "Silahkan ketikkan kata kunci"
 
@@ -225,7 +225,7 @@ def send_response(receiver, message):
         "messaging_product": "whatsapp",
         "to": receiver,
         "type": "text",
-        "text": {"preview_url": True, "body": message},
+        "text": {"preview_url": False, "body": message},
     }
 
     try:
@@ -316,7 +316,7 @@ def get_production_data():
 @frappe.whitelist(allow_guest=True)
 def get_yearly_production_data():
 
-    filters = frappe._dict({"site_name": "Pusaka Tanah Persada", "year": "2024"})
+    filters = frappe._dict({"site_name": "PT Pusaka Tanah Persada", "year": "2025"})
 
     current_year_data = get_current_year_production_data(filters)
 
