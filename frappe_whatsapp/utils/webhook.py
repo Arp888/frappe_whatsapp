@@ -111,10 +111,12 @@ def post():
                             if sbal:
                                 msg = f"Stockpile balance (_update {sbal['last_update']}_)\n"
                                 for sb in sbal["balance"]:
-                                    qty_survey = frappe.utils.fmt_money(sbal["balance"][sb]["qty_by_survey"], 2)
                                     msg += f"- {sb} = "
-                                    msg += f"*{qty_survey}* {sbal["balance"][sb]['uom']}\n"
-
+                                    for dt in sbal["balance"][sb]:
+                                        qty_survey = frappe.utils.fmt_money(
+                                            sbal["balance"][sb][dt]["qty_by_survey"], 2
+                                        )
+                                        msg += f"*{qty_survey}* {sbal['balance'][sb][dt]['uom']}\n"
                             else:
                                 msg = "Stobkpile balance data is not available"
                         else:
@@ -322,6 +324,24 @@ class StockpileBalanceFilter(TypedDict):
 
 
 SLEntry = dict[str, frappe.Any]
+
+
+@frappe.whitelist(allow_guest=True)
+def check_stock():
+    filters = frappe._dict({"site_name": "Pusaka Tanah Persada", "year": "2024"})
+    sbal = get_stockpile_balance_report(filters)
+    msg = ""
+    if sbal:
+        msg = f"Stockpile balance (_update {sbal['last_update']}_)\n"
+        for sb in sbal["balance"]:
+            msg += f"- {sb} = "
+            for dt in sbal["balance"][sb]:
+                qty_survey = frappe.utils.fmt_money(
+                    sbal["balance"][sb][dt]["qty_by_survey"], 2
+                )
+                msg += f"*{qty_survey}* {sbal['balance'][sb][dt]['uom']}\n"
+
+    return msg
 
 
 @frappe.whitelist(allow_guest=True)
