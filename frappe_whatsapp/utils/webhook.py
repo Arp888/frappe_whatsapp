@@ -10,6 +10,7 @@ from frappe.integrations.utils import make_post_request
 from frappe.query_builder import Order
 from frappe.query_builder.functions import CombineDatetime, Extract, Sum
 from frappe.utils import (
+    TypedDict,
     cstr,
     flt,
     get_link_to_form,
@@ -18,7 +19,7 @@ from frappe.utils import (
     nowdate,
     nowtime,
 )
-from hcapp.mine_production.api.v1.get_yearly_production_data import get_dashboard_data
+from hcapp.mine_production.api.v1.get_stockpile_balance import get_stockpile_balance
 from werkzeug.wrappers import Response
 
 
@@ -85,18 +86,39 @@ def post():
 
                 if text.lower() == "hello":
                     msg = "Hi there! How can I help you?"
-                elif text.lower() == "produksi":
-                    prod = get_yearly_production_data()
-                    if prod:
-                        msg = f"*Total produksi (update {prod.last_posting_date})*\n"
-                        for key, val in prod.prod_data.items():
-                            msg += f"- {key} = {val['tonnage']} {val['uom']}\n"
-                    else:
-                        msg = "Data tidak tersedia"
-                else:
-                    msg = "Silahkan ketikkan kata kunci"
 
-                send_response(sender, msg)
+                filtered_text = filter_text_message(text)
+                if filtered_text:
+                    keyword = filtered_text.keyword
+                    filters = frappe._dict(
+                        {
+                            "site_name": filtered_text.site_name,
+                            "year": filtered_text.year,
+                        }
+                    )
+                    if keyword.lower() == "production":
+                        prod = get_yearly_production_data(filters)
+                        if prod:
+                            msg = (
+                                f"*Total produksi (update {prod.last_posting_date})*\n"
+                            )
+                            for key, val in prod.prod_data.items():
+                                msg += f"- {key} = *{val['tonnage']}* {val['uom']}\n"
+                        else:
+                            msg = "Production data is not available"
+                    elif keyword.lower() == "stockpile":
+                        sbal = get_stockpile_balance_report(filters)
+                        if sbal:
+                            msg = f"Stockpile balance (update {sbal.last_update})\n"
+                            for key, val in sbal.balance.items():
+                                msg += f"- {key} = "
+                                for i in data:
+                                    msg += f"*{data[i]["qty_by_survey"]}* {data[i]["uom"]}\n"
+                    else:
+                        msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
+
+                if msg:
+                    send_response(sender, msg)
 
             elif message_type == "reaction":
                 frappe.get_doc(
@@ -286,9 +308,70 @@ def update_message_status(data):
     doc.save(ignore_permissions=True)
 
 
+class StockpileBalanceFilter(TypedDict):
+    site_name: str | None
+    from_date: str
+    to_date: str
+    mining_item_code: str | None
+    stockpile_name: str | None
+    year: str | None
+
+
+SLEntry = dict[str, frappe.Any]
+
+
+def filter_text_message(text):
+    text_lower = text.lower()
+    text_array = text_lower.split(" ")
+    text_array_filter = [var for var in text_array if var]
+    keyword = text_array_filter[0]
+    site_name = text_array_filter[1]
+    year = text_array_filter[2]
+
+    if not site_name or not year:
+        return {}
+
+    site = get_site_name(site_name)
+    if not site:
+        return {}
+
+    return {"keyword": keyword, "site_name": site[0].name, "year": year}
+
+
 @frappe.whitelist(allow_guest=True)
-def get_production_data():
-    prod = get_yearly_production_data()
+def get_stockpile_balance_report(filters):
+    # text_lower = text.lower()
+    # text_array = text_lower.split(" ")
+    # text_array_filter = [var for var in text_array if var]
+    # keyword = text_array_filter[0]
+    # site_name = text_array_filter[1]
+    # year = text_array_filter[2]
+
+    # if not site_name or not year:
+    #     return {}
+
+    # site = get_site_name(site_name)
+    # if not site:
+    #     return {}
+    # return {"keyword": keyword, "filters": {"site_name": site[0].name, "year": year}}
+
+    # filters = frappe._dict({"site_name": "Pusaka Tanah Persada", "year": "2024"})
+    stockpile_balances = get_stockpile_balance(filters)
+    data_map = {}
+    if stockpile_balances.stp_balance:
+        data_map = {
+            "balance": stockpile_balances.stp_balance,
+            "last_update": stockpile_balances.additional_info[
+                "last_stockpile_reco_posting_datetime"
+            ],
+        }
+
+    return data_map
+
+
+@frappe.whitelist(allow_guest=True)
+def get_production_data(filters):
+    prod = get_yearly_production_data(filters)
     # return prod_data.data
     msg = ""
     if prod:
@@ -300,9 +383,9 @@ def get_production_data():
 
 
 @frappe.whitelist(allow_guest=True)
-def get_yearly_production_data():
+def get_yearly_production_data(filters):
 
-    filters = frappe._dict({"site_name": "PT Pusaka Tanah Persada", "year": "2025"})
+    # filters = frappe._dict({"site_name": "PT Pusaka Tanah Persada", "year": "2025"})
 
     current_year_data = get_current_year_production_data(filters)
 
@@ -436,3 +519,15 @@ def get_mining_item(item):
     q = mining_query.run(as_dict=True)
 
     return q[0]
+
+
+def get_site_name(item):
+    site_location = frappe.qb.DocType("Site Location")
+    query = (
+        frappe.qb.from_(site_location)
+        .select(site_location.name, site_location.site_name, site_location.site_abbr)
+        .where(site_location.site_abbr == item)
+    )
+    q = query.run(as_dict=True)
+
+    return q
