@@ -110,10 +110,10 @@ def post():
                         sbal = get_stockpile_balance_report(filters)
                         if sbal:
                             msg = f"Stockpile balance (update {sbal.last_update})\n"
-                            for key, val in sbal.balance.items():
+                            for key, balances in sbal.balance.items():
                                 msg += f"- {key} = "
-                                for i in data:
-                                    msg += f"*{data[i]["qty_by_survey"]}* {data[i]["uom"]}\n"
+                                for i in balances:
+                                    msg += f"*{balances[i]["qty_by_survey"]}* {balances[i]["uom"]}\n"
                     else:
                         msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
 
