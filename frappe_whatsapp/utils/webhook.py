@@ -90,11 +90,11 @@ def post():
                 else:
                     filtered_text = filter_text_message(text)
                     if filtered_text:
-                        keyword = filtered_text.keyword
+                        keyword = filtered_text["keyword"]
                         filters = frappe._dict(
                             {
-                                "site_name": filtered_text.site_name,
-                                "year": filtered_text.year,
+                                "site_name": filtered_text["site_name"],
+                                "year": filtered_text["year"],
                             }
                         )
                         if keyword.lower() == "production":
@@ -324,15 +324,24 @@ class StockpileBalanceFilter(TypedDict):
 SLEntry = dict[str, frappe.Any]
 
 
-def filter_text_message(text):
+@frappe.whitelist(allow_guest=True)
+def filter_text_message(text=None):
+    import re
+
     text_lower = text.lower()
     text_array = text_lower.split(" ")
     text_array_filter = [var for var in text_array if var]
+    if len(text_array_filter) < 3:
+        return {}
+
     keyword = text_array_filter[0]
     site_name = text_array_filter[1]
     year = text_array_filter[2]
 
-    if not site_name or not year:
+    pattern_str = r"^\d{4}$"
+    check_year_format = re.match(pattern_str, year)
+
+    if not site_name or not year or not check_year_format:
         return {}
 
     site = get_site_name(site_name)
