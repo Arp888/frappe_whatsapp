@@ -100,21 +100,23 @@ def post():
                         if keyword.lower() == "production":
                             prod = get_yearly_production_data(filters)
                             if prod:
-                                msg = f"*Total produksi (update {prod.last_posting_date})*\n"
+                                msg = f"Total produksi (update {prod.last_posting_date})\n"
                                 for key, val in prod.prod_data.items():
-                                    msg += (
-                                        f"- {key} = *{val['tonnage']}* {val['uom']}\n"
-                                    )
+                                    tonnage = frappe.utils.fmt_money(val["tonnage"], 2)
+                                    msg += f"- {key} = *{tonnage}* {val['uom']}\n"
                             else:
                                 msg = "Production data is not available"
                         elif keyword.lower() == "stockpile":
                             sbal = get_stockpile_balance_report(filters)
                             if sbal:
-                                msg = f"Stockpile balance (update {sbal.last_update})\n"
+                                msg = f"Stockpile balance (update {sbal['last_update']})\n"
                                 for key, balances in sbal.balance.items():
                                     msg += f"- {key} = "
                                     for i in balances:
-                                        msg += f"*{balances[i]['qty_by_survey']}* {balances[i]['uom']}\n"
+                                        qty_survey = frappe.utils.fmt_money(
+                                            balances[i]["qty_by_survey"], 2
+                                        )
+                                        msg += f"*{qty_survey}* {balances[i]['uom']}\n"
                             else:
                                 msg = "Stobkpile balance data is not available"
                         else:
