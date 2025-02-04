@@ -86,38 +86,42 @@ def post():
 
                 if text.lower() == "hello":
                     msg = "Hi there! How can I help you?"
-
-                filtered_text = filter_text_message(text)
-                if filtered_text:
-                    keyword = filtered_text.keyword
-                    filters = frappe._dict(
-                        {
-                            "site_name": filtered_text.site_name,
-                            "year": filtered_text.year,
-                        }
-                    )
-                    if keyword.lower() == "production":
-                        prod = get_yearly_production_data(filters)
-                        if prod:
-                            msg = (
-                                f"*Total produksi (update {prod.last_posting_date})*\n"
-                            )
-                            for key, val in prod.prod_data.items():
-                                msg += f"- {key} = *{val['tonnage']}* {val['uom']}\n"
+                    send_response(sender, msg)
+                else:
+                    filtered_text = filter_text_message(text)
+                    if filtered_text:
+                        keyword = filtered_text.keyword
+                        filters = frappe._dict(
+                            {
+                                "site_name": filtered_text.site_name,
+                                "year": filtered_text.year,
+                            }
+                        )
+                        if keyword.lower() == "production":
+                            prod = get_yearly_production_data(filters)
+                            if prod:
+                                msg = f"*Total produksi (update {prod.last_posting_date})*\n"
+                                for key, val in prod.prod_data.items():
+                                    msg += (
+                                        f"- {key} = *{val['tonnage']}* {val['uom']}\n"
+                                    )
+                            else:
+                                msg = "Production data is not available"
+                        elif keyword.lower() == "stockpile":
+                            sbal = get_stockpile_balance_report(filters)
+                            if sbal:
+                                msg = f"Stockpile balance (update {sbal.last_update})\n"
+                                for key, balances in sbal.balance.items():
+                                    msg += f"- {key} = "
+                                    for i in balances:
+                                        msg += f"*{balances[i]['qty_by_survey']}* {balances[i]['uom']}\n"
+                            else:
+                                msg = "Stobkpile balance data is not available"
                         else:
-                            msg = "Production data is not available"
-                    elif keyword.lower() == "stockpile":
-                        sbal = get_stockpile_balance_report(filters)
-                        if sbal:
-                            msg = f"Stockpile balance (update {sbal.last_update})\n"
-                            for key, balances in sbal.balance.items():
-                                msg += f"- {key} = "
-                                for i in balances:
-                                    msg += f"*{balances[i]['qty_by_survey']}* {balances[i]['uom']}\n"
+                            msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
                     else:
                         msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
 
-                if msg:
                     send_response(sender, msg)
 
             elif message_type == "reaction":
