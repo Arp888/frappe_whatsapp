@@ -100,7 +100,11 @@ def post():
                         if keyword.lower() == "production":
                             prod = get_yearly_production_data(filters)
                             if prod:
-                                msg = f"Total produksi (_update {prod.last_posting_date}_)\n"
+                                prod_last_update = frappe.utils.format_datetime(
+                                    prod.last_posting_date, "d MMM yyyy H:m"
+                                )
+
+                                msg = f"Total produksi (_update {prod_last_update}_)\n"
                                 for key, val in prod.prod_data.items():
                                     tonnage = frappe.utils.fmt_money(val["tonnage"], 2)
                                     msg += f"- {key} = *{tonnage}* {val['uom']}\n"
@@ -109,7 +113,10 @@ def post():
                         elif keyword.lower() == "stockpile":
                             sbal = get_stockpile_balance_report(filters)
                             if sbal:
-                                msg = f"Stockpile balance (_update {sbal['last_update']}_)\n"
+                                last_update = frappe.utils.format_datetime(
+                                    sbal["last_update"], "d MMM yyyy H:m"
+                                )
+                                msg = f"Stockpile balance (_update {last_update}_)\n"
                                 for sb in sbal["balance"]:
                                     msg += f"- {sb} = "
                                     for dt in sbal["balance"][sb]:
@@ -332,7 +339,10 @@ def check_stock():
     sbal = get_stockpile_balance_report(filters)
     msg = ""
     if sbal:
-        msg = f"Stockpile balance (_update {sbal['last_update']}_)\n"
+        last_update = frappe.utils.format_datetime(
+            sbal["last_update"], "d MMM yyyy H:m"
+        )
+        msg = f"Stockpile balance (_update {last_update}_)\n"
         for sb in sbal["balance"]:
             msg += f"- {sb} = "
             for dt in sbal["balance"][sb]:
