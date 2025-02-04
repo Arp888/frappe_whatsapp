@@ -107,17 +107,16 @@ def post():
                             else:
                                 msg = "Production data is not available"
                         elif keyword.lower() == "stockpile":
-                            # sbal = get_stockpile_balance_report(filters)
-                            # if sbal:
-                            #     msg = f"Stockpile balance (update {sbal['last_update']})\n"
-                            #     for key in sbal["balance"]:
-                            #         qty_survey = frappe.utils.fmt_money(sbal["balance"][key]["qty_by_survey"], 2)
-                            #         msg += f"- {key} = "
-                            #         msg += f"*{qty_survey}* {sbal["balance"][key]['uom']}\n"
+                            sbal = get_stockpile_balance_report(filters)
+                            if sbal:
+                                msg = f"Stockpile balance (update {sbal['last_update']})\n"
+                                # for key in sbal["balance"]:
+                                #     qty_survey = frappe.utils.fmt_money(sbal["balance"][key]["qty_by_survey"], 2)
+                                #     msg += f"- {key} = "
+                                #     msg += f"*{qty_survey}* {sbal["balance"][key]['uom']}\n"
 
-                            # else:
-                            #     msg = "Stobkpile balance data is not available"
-                            msg = "Stockpile balance data is not available"
+                            else:
+                                msg = "Stobkpile balance data is not available"
                         else:
                             msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
                     else:
