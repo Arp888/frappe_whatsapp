@@ -326,11 +326,8 @@ SLEntry = dict[str, frappe.Any]
 
 
 @frappe.whitelist(allow_guest=True)
-def filter_text_message(text=None):
+def filter_text_message(text):
     import re
-
-    if not text:
-        return {}
 
     text_lower = text.lower()
     text_array = text_lower.split(" ")
@@ -345,9 +342,12 @@ def filter_text_message(text=None):
     pattern_str = r"^\d{4}$"
     check_year_format = re.match(pattern_str, year)
 
+    if not site_name or not year or not check_year_format:
+        return {}
+
     site = get_site_name(site_name)
 
-    if not site or not year or not check_year_format:
+    if not site:
         return {}
 
     return {"keyword": keyword, "site_name": site[0].name, "year": year}
