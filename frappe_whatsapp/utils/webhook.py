@@ -107,18 +107,19 @@ def post():
                             else:
                                 msg = "Production data is not available"
                         elif keyword.lower() == "stockpile":
-                            sbal = get_stockpile_balance_report(filters)
-                            if sbal:
-                                msg = f"Stockpile balance (update {sbal['last_update']})\n"
-                                for key, balances in sbal.balance.items():
-                                    msg += f"- {key} = "
-                                    for i in balances:
-                                        qty_survey = frappe.utils.fmt_money(
-                                            balances[i]["qty_by_survey"], 2
-                                        )
-                                        msg += f"*{qty_survey}* {balances[i]['uom']}\n"
-                            else:
-                                msg = "Stobkpile balance data is not available"
+                            # sbal = get_stockpile_balance_report(filters)
+                            # if sbal:
+                            #     msg = f"Stockpile balance (update {sbal['last_update']})\n"
+                            #     for key, balances in sbal.balance.items():
+                            #         msg += f"- {key} = "
+                            #         for i in balances:
+                            #             qty_survey = frappe.utils.fmt_money(
+                            #                 balances[i]["qty_by_survey"], 2
+                            #             )
+                            #             msg += f"*{qty_survey}* {balances[i]['uom']}\n"
+                            # else:
+                            #     msg = "Stobkpile balance data is not available"
+                            msg = f"Stockpile Balance Data"
                         else:
                             msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
                     else:
@@ -330,6 +331,9 @@ SLEntry = dict[str, frappe.Any]
 def filter_text_message(text=None):
     import re
 
+    if not text:
+        return {}
+
     text_lower = text.lower()
     text_array = text_lower.split(" ")
     text_array_filter = [var for var in text_array if var]
@@ -343,11 +347,9 @@ def filter_text_message(text=None):
     pattern_str = r"^\d{4}$"
     check_year_format = re.match(pattern_str, year)
 
-    if not site_name or not year or not check_year_format:
-        return {}
-
     site = get_site_name(site_name)
-    if not site:
+
+    if not site or not year or not check_year_format:
         return {}
 
     return {"keyword": keyword, "site_name": site[0].name, "year": year}
@@ -355,21 +357,6 @@ def filter_text_message(text=None):
 
 @frappe.whitelist(allow_guest=True)
 def get_stockpile_balance_report(filters):
-    # text_lower = text.lower()
-    # text_array = text_lower.split(" ")
-    # text_array_filter = [var for var in text_array if var]
-    # keyword = text_array_filter[0]
-    # site_name = text_array_filter[1]
-    # year = text_array_filter[2]
-
-    # if not site_name or not year:
-    #     return {}
-
-    # site = get_site_name(site_name)
-    # if not site:
-    #     return {}
-    # return {"keyword": keyword, "filters": {"site_name": site[0].name, "year": year}}
-
     # filters = frappe._dict({"site_name": "Pusaka Tanah Persada", "year": "2024"})
     stockpile_balances = get_stockpile_balance(filters)
     data_map = {}
