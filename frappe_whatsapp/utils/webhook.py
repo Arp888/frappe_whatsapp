@@ -113,7 +113,7 @@ def post():
                             for key, balances in sbal.balance.items():
                                 msg += f"- {key} = "
                                 for i in balances:
-                                    msg += f"*{balances[i]["qty_by_survey"]}* {balances[i]["uom"]}\n"
+                                    msg += f"*{balances[i]['qty_by_survey']}* {balances[i]['uom']}\n"
                     else:
                         msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
 
