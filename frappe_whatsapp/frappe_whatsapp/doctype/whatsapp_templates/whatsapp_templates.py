@@ -2,13 +2,14 @@
 
 # Copyright (c) 2022, Shridhar Patil and contributors
 # For license information, please see license.txt
-import os
 import json
+import os
+
 import frappe
 import magic
-from frappe.model.document import Document
-from frappe.integrations.utils import make_post_request, make_request
 from frappe.desk.form.utils import get_pdf_link
+from frappe.integrations.utils import make_post_request, make_request
+from frappe.model.document import Document
 
 
 class WhatsAppTemplates(Document):
@@ -26,7 +27,6 @@ class WhatsAppTemplates(Document):
         if not self.is_new():
             self.update_template()
 
-
     def get_session_id(self):
         """Upload media."""
         self.get_settings()
@@ -35,44 +35,41 @@ class WhatsAppTemplates(Document):
         file_type = mime.from_file(file_path)
 
         payload = {
-            'file_length': os.path.getsize(file_path),
-            'file_type': file_type,
-            'messaging_product': 'whatsapp'
+            "file_length": os.path.getsize(file_path),
+            "file_type": file_type,
+            "messaging_product": "whatsapp",
         }
 
         response = make_post_request(
             f"{self._url}/{self._version}/{self._app_id}/uploads",
             headers=self._headers,
-            data=json.loads(json.dumps(payload))
+            data=json.loads(json.dumps(payload)),
         )
-        self._session_id = response['id']
+        self._session_id = response["id"]
 
     def get_media_id(self):
         self.get_settings()
 
-        headers = {
-                "authorization": f"OAuth {self._token}"
-            }
+        headers = {"authorization": f"OAuth {self._token}"}
         file_name = self.get_absolute_path(self.sample)
-        with open(file_name, mode='rb') as file: # b is important -> binary
+        with open(file_name, mode="rb") as file:  # b is important -> binary
             file_content = file.read()
 
         payload = file_content
         response = make_post_request(
             f"{self._url}/{self._version}/{self._session_id}",
             headers=headers,
-            data=payload
+            data=payload,
         )
 
-        self._media_id = response['h']
+        self._media_id = response["h"]
 
     def get_absolute_path(self, file_name):
-        if(file_name.startswith('/files/')):
-            file_path = f'{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}/public{file_name}'
-        if(file_name.startswith('/private/')):
-            file_path = f'{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}{file_name}'
+        if file_name.startswith("/files/"):
+            file_path = f"{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}/public{file_name}"
+        if file_name.startswith("/private/"):
+            file_path = f"{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}{file_name}"
         return file_path
-
 
     def after_insert(self):
         if self.template_name:
@@ -189,7 +186,7 @@ class WhatsAppTemplates(Document):
                 samples = self.sample.split(", ")
                 header.update({"example": {"header_text": samples}})
         else:
-            pdf_link = ''
+            pdf_link = ""
             if not self.sample:
                 key = frappe.get_doc(self.doctype, self.name).get_document_share_key()
                 link = get_pdf_link(self.doctype, self.name)
@@ -219,11 +216,17 @@ def fetch():
             headers=headers,
         )
 
+        print(response)
+
         for template in response["data"]:
             # set flag to insert or update
             flags = 1
-            if frappe.db.exists("WhatsApp Templates", {"actual_name": template["name"]}):
-                doc = frappe.get_doc("WhatsApp Templates", {"actual_name": template["name"]})
+            if frappe.db.exists(
+                "WhatsApp Templates", {"actual_name": template["name"]}
+            ):
+                doc = frappe.get_doc(
+                    "WhatsApp Templates", {"actual_name": template["name"]}
+                )
             else:
                 flags = 0
                 doc = frappe.new_doc("WhatsApp Templates")
