@@ -7,6 +7,7 @@ from frappe.email.doctype.notification.notification import Notification, get_con
 from frappe.integrations.utils import make_post_request
 from frappe.model.document import Document
 from frappe.utils import add_to_date, datetime, nowdate
+from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals, safe_exec
 
 
@@ -27,6 +28,7 @@ class WhatsappNotification(Notification):
                 frappe.throw(
                     _("Please configure whatsapp settings to send WhatsApp messages")
                 )
+            validate_template(self.subject)
 
     def send(self, doc):
         context = get_context(doc)
