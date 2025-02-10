@@ -54,6 +54,7 @@ class WhatsappNotification(Notification):
     def send_whatsapp_message(self, doc, context):
         recipients = self.get_receiver_list(doc, context)
         receiverNumbers = []
+        data = {}
         for recipient in recipients:
             number = recipient
             if "{" in number:
@@ -72,7 +73,7 @@ class WhatsappNotification(Notification):
 
             self.notify(data)
 
-        frappe.msgprint(_(f"Whatsapp notification sent to {','.join(receiverNumbers)}"))
+        # frappe.msgprint(_(f"Whatsapp notification sent to {','.join(receiverNumbers)}"))
 
     def notify(self, data):
         """Notify."""
@@ -87,25 +88,54 @@ class WhatsappNotification(Notification):
             "content-type": "application/json",
         }
         try:
+            success = False
             response = make_post_request(
                 f"{settings.url}/{settings.version}/{settings.phone_id}/messages",
                 headers=headers,
                 data=json.dumps(data),
             )
-            self.message_id = response["messages"][0]["id"]
+
+            if not self.get("content_type"):
+                self.content_type = "text"
+
+            frappe.get_doc(
+                {
+                    "doctype": "WhatsApp Message",
+                    "type": "Outgoing",
+                    "message": data["text"]["body"],
+                    "to": data["to"],
+                    "message_type": "Template",
+                    "message_id": response["messages"][0]["id"],
+                    "content_type": self.content_type,
+                }
+            ).save(ignore_permissions=True)
+
+            frappe.msgprint("WhatsApp Message Triggered", indicator="green", alert=True)
+            success = True
 
         except Exception as e:
-            res = frappe.flags.integration_request.json()["error"]
-            error_message = res.get("Error", res.get("message"))
+            error_message = str(e)
+            if frappe.flags.integration_request:
+                response = frappe.flags.integration_request.json()["error"]
+                error_message = response.get("Error", response.get("message"))
+
+            frappe.msgprint(
+                f"Failed to trigger whatsapp message: {error_message}",
+                indicator="red",
+                alert=True,
+            )
+        finally:
+            if not success:
+                meta = {"error": error_message}
+            else:
+                meta = frappe.flags.integration_request.json()
             frappe.get_doc(
                 {
                     "doctype": "WhatsApp Notification Log",
                     "template": "Text Message",
-                    "meta_data": frappe.flags.integration_request.json(),
+                    "meta_data": meta,
                 }
             ).insert(ignore_permissions=True)
-
-            frappe.throw(msg=error_message, title=res.get("error_user_title", "Error"))
 
     # def get_receiver_phone_number(self, number):
     #     phoneNumber = number.replace("+", "").replace("-", "")
