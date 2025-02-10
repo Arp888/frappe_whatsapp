@@ -51,8 +51,6 @@ class WhatsappNotification(Notification):
     #     if self.type == "Outgoing" and self.message_type != "Template":
     #         if self.attach and not self.attach.startswith("http"):
     #             link = frappe.utils.get_url() + "/" + self.attach
-    #         else:
-    #             link = self.attach
 
     #         data = {
     #             "messaging_product": "whatsapp",
@@ -61,21 +59,9 @@ class WhatsappNotification(Notification):
     #         }
     #         if self.is_reply and self.reply_to_message_id:
     #             data["context"] = {"message_id": self.reply_to_message_id}
-    #         if self.content_type in ["document", "image", "video"]:
-    #             data[self.content_type.lower()] = {
-    #                 "link": link,
-    #                 "caption": self.message,
-    #             }
-    #         elif self.content_type == "reaction":
-    #             data["reaction"] = {
-    #                 "message_id": self.reply_to_message_id,
-    #                 "emoji": self.message,
-    #             }
-    #         elif self.content_type == "text":
-    #             data["text"] = {"preview_url": True, "body": self.message}
 
-    #         elif self.content_type == "audio":
-    #             data["text"] = {"link": link}
+    #         if self.content_type == "text":
+    #             data["text"] = {"preview_url": True, "body": self.message}
 
     #         try:
     #             self.notify(data)
@@ -103,7 +89,7 @@ class WhatsappNotification(Notification):
             data = {
                 "messaging_product": "whatsapp",
                 "to": self.format_number(phoneNumber),
-                "type": "text",
+                "content_type": "text",
                 "text": {"preview_url": False, "body": message},
             }
 
@@ -126,25 +112,52 @@ class WhatsappNotification(Notification):
             "content-type": "application/json",
         }
         try:
+            success = False
             response = make_post_request(
                 f"{settings.url}/{settings.version}/{settings.phone_id}/messages",
                 headers=headers,
                 data=json.dumps(data),
             )
-            self.message_id = response["messages"][0]["id"]
+
+            if not self.get("content_type"):
+                self.content_type = "text"
+
+            frappe.get_doc(
+                {
+                    "doctype": "WhatsApp Message",
+                    "type": "Outgoing",
+                    "message": data["text"]["body"],
+                    "to": data["to"],
+                    "message_type": "Manual",
+                    "message_id": response["messages"][0]["id"],
+                    "content_type": self.content_type,
+                }
+            ).save(ignore_permissions=True)
+            success = True
 
         except Exception as e:
-            res = frappe.flags.integration_request.json()["error"]
-            error_message = res.get("Error", res.get("message"))
+            error_message = str(e)
+            if frappe.flags.integration_request:
+                response = frappe.flags.integration_request.json()["error"]
+                error_message = response.get("Error", response.get("message"))
+
+            frappe.msgprint(
+                f"Failed to trigger whatsapp message: {error_message}",
+                indicator="red",
+                alert=True,
+            )
+        finally:
+            if not success:
+                meta = {"error": error_message}
+            else:
+                meta = frappe.flags.integration_request.json()
             frappe.get_doc(
                 {
                     "doctype": "WhatsApp Notification Log",
-                    "template": "Text Message",
-                    "meta_data": frappe.flags.integration_request.json(),
+                    "template": self.template,
+                    "meta_data": meta,
                 }
             ).insert(ignore_permissions=True)
-
-            frappe.throw(msg=error_message, title=res.get("error_user_title", "Error"))
 
     # def get_receiver_phone_number(self, number):
     #     phoneNumber = number.replace("+", "").replace("-", "")
@@ -169,3 +182,7 @@ class WhatsappNotification(Notification):
             number = number[1 : len(number)]
 
         return number
+
+
+def on_doctype_update():
+    frappe.db.add_index("WhatsApp Message", ["reference_doctype", "reference_name"])
