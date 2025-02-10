@@ -6,6 +6,20 @@ app_publisher = "Shridhar Patil"
 app_description = "WhatsApp integration for frappe"
 app_email = "shridhar.p@zerodha.com"
 app_license = "MIT"
+fixtures = [
+    {
+        "dt": "Property Setter",
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "Notification-channel-options",
+                ],
+            ]
+        ],
+    },
+]
 
 # Includes in <head>
 # ------------------
@@ -31,6 +45,8 @@ app_include_js = "/assets/frappe_whatsapp/js/frappe_whatsapp.js"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"Notification": "public/js/notification.js"}
+
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -99,6 +115,10 @@ app_include_js = "/assets/frappe_whatsapp/js/frappe_whatsapp.js"
 #   "ToDo": "custom_app.overrides.CustomToDo"
 # }
 
+override_doctype_class = {
+    "Notification": "frappe_whatsapp.overrides.notification.WhatsappNotification"
+}
+
 # Document Events
 # ---------------
 # Hook on document methods and events
@@ -115,15 +135,9 @@ app_include_js = "/assets/frappe_whatsapp/js/frappe_whatsapp.js"
 # ---------------
 
 scheduler_events = {
-    "all": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_all"
-    ],
-    "hourly": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_hourly"
-    ],
-    "hourly_long": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_hourly_long"
-    ],
+    "all": ["frappe_whatsapp.utils.trigger_whatsapp_notifications_all"],
+    "hourly": ["frappe_whatsapp.utils.trigger_whatsapp_notifications_hourly"],
+    "hourly_long": ["frappe_whatsapp.utils.trigger_whatsapp_notifications_hourly_long"],
     "daily": [
         "frappe_whatsapp.utils.trigger_whatsapp_notifications_daily",
         "frappe_whatsapp.frappe_whatsapp.doctype.whatsapp_notification.whatsapp_notification.trigger_notifications",
@@ -215,6 +229,6 @@ doc_events = {
         "on_trash": "frappe_whatsapp.utils.run_server_script_for_doc_event",
         "after_delete": "frappe_whatsapp.utils.run_server_script_for_doc_event",
         "before_update_after_submit": "frappe_whatsapp.utils.run_server_script_for_doc_event",
-        "on_update_after_submit": "frappe_whatsapp.utils.run_server_script_for_doc_event"
+        "on_update_after_submit": "frappe_whatsapp.utils.run_server_script_for_doc_event",
     }
 }
