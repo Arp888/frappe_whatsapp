@@ -1,9 +1,10 @@
 # Copyright (c) 2022, Shridhar Patil and contributors
 # For license information, please see license.txt
 import json
+
 import frappe
-from frappe.model.document import Document
 from frappe.integrations.utils import make_post_request
+from frappe.model.document import Document
 
 
 class WhatsAppMessage(Document):
@@ -35,7 +36,7 @@ class WhatsAppMessage(Document):
                     "emoji": self.message,
                 }
             elif self.content_type == "text":
-                data["text"] = {"preview_url": True, "body": self.message}
+                data["text"] = {"preview_url": False, "body": self.message}
 
             elif self.content_type == "audio":
                 data["text"] = {"link": link}
@@ -46,7 +47,11 @@ class WhatsAppMessage(Document):
             except Exception as e:
                 self.status = "Failed"
                 frappe.throw(f"Failed to send message {str(e)}")
-        elif self.type == "Outgoing" and self.message_type == "Template" and not self.message_id:
+        elif (
+            self.type == "Outgoing"
+            and self.message_type == "Template"
+            and not self.message_id
+        ):
             self.send_template()
 
     def send_template(self):
@@ -64,7 +69,11 @@ class WhatsAppMessage(Document):
         }
 
         if template.sample_values:
-            field_names = template.field_names.split(",") if template.field_names else template.sample_values.split(",")
+            field_names = (
+                template.field_names.split(",")
+                if template.field_names
+                else template.sample_values.split(",")
+            )
             parameters = []
             template_parameters = []
 
@@ -92,16 +101,18 @@ class WhatsAppMessage(Document):
             ref_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
             for field_name in field_names:
                 value = ref_doc.get_formatted(field_name.strip())
-                
+
                 header_parameters.append({"type": "text", "text": value})
                 template_header_parameters.append(value)
 
             self.template_header_parameters = json.dumps(template_header_parameters)
 
-            data["template"]["components"].append({
-                "type": "header",
-                "parameters": header_parameters,
-            })
+            data["template"]["components"].append(
+                {
+                    "type": "header",
+                    "parameters": header_parameters,
+                }
+            )
 
         self.notify(data)
 
@@ -146,7 +157,6 @@ class WhatsAppMessage(Document):
         return number
 
 
-
 def on_doctype_update():
     frappe.db.add_index("WhatsApp Message", ["reference_doctype", "reference_name"])
 
@@ -154,16 +164,18 @@ def on_doctype_update():
 @frappe.whitelist()
 def send_template(to, reference_doctype, reference_name, template):
     try:
-        doc = frappe.get_doc({
-            "doctype": "WhatsApp Message",
-            "to": to,
-            "type": "Outgoing",
-            "message_type": "Template",
-            "reference_doctype": reference_doctype,
-            "reference_name": reference_name,
-            "content_type": "text",
-            "template": template
-        })
+        doc = frappe.get_doc(
+            {
+                "doctype": "WhatsApp Message",
+                "to": to,
+                "type": "Outgoing",
+                "message_type": "Template",
+                "reference_doctype": reference_doctype,
+                "reference_name": reference_name,
+                "content_type": "text",
+                "template": template,
+            }
+        )
 
         doc.save()
     except Exception as e:
