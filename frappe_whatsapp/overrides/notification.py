@@ -40,41 +40,14 @@ class WhatsappNotification(Notification):
         try:
             if self.channel == "Whatsapp":
                 self.send_whatsapp_message(doc, context)
+
+            if self.channel == "System Notification" or self.send_system_notification:
+                self.create_system_notification(doc, context)
         except:
             frappe.log_error(
                 title="Failed to send notification", message=frappe.get_traceback()
             )
         super(WhatsappNotification, self).send(doc)
-
-    # def before_insert(self):
-    #     """Send message."""
-    #     if self.type == "Outgoing" and self.message_type != "Template":
-    #         if self.attach and not self.attach.startswith("http"):
-    #             link = frappe.utils.get_url() + "/" + self.attach
-
-    #         data = {
-    #             "messaging_product": "whatsapp",
-    #             "to": self.format_number(self.to),
-    #             "type": self.content_type,
-    #         }
-    #         if self.is_reply and self.reply_to_message_id:
-    #             data["context"] = {"message_id": self.reply_to_message_id}
-
-    #         if self.content_type == "text":
-    #             data["text"] = {"preview_url": True, "body": self.message}
-
-    #         try:
-    #             self.notify(data)
-    #             self.status = "Success"
-    #         except Exception as e:
-    #             self.status = "Failed"
-    #             frappe.throw(f"Failed to send message {str(e)}")
-    #     elif (
-    #         self.type == "Outgoing"
-    #         and self.message_type == "Template"
-    #         and not self.message_id
-    #     ):
-    #         self.send_template()
 
     def send_whatsapp_message(self, doc, context):
         recipients = self.get_receiver_list(doc, context)
@@ -125,6 +98,7 @@ class WhatsappNotification(Notification):
             frappe.get_doc(
                 {
                     "doctype": "WhatsApp Message",
+                    "label": self.subject,
                     "type": "Outgoing",
                     "message": data["text"]["body"],
                     "to": data["to"],
@@ -154,7 +128,7 @@ class WhatsappNotification(Notification):
             frappe.get_doc(
                 {
                     "doctype": "WhatsApp Notification Log",
-                    "template": self.template,
+                    "template": "Webhook",
                     "meta_data": meta,
                 }
             ).insert(ignore_permissions=True)
@@ -183,6 +157,59 @@ class WhatsappNotification(Notification):
 
         return number
 
+    def create_system_notification(self, doc, context):
+        subject = self.subject
+        if "{" in subject:
+            subject = frappe.render_template(self.subject, context)
 
-def on_doctype_update():
-    frappe.db.add_index("WhatsApp Message", ["reference_doctype", "reference_name"])
+        attachments = self.get_attachment(doc)
+        recipients, cc, bcc = self.get_list_of_recipients(doc, context)
+        users = recipients + cc + bcc
+        if not users:
+            return
+
+        notification_doc = {
+            "type": "Alert",
+            "document_type": get_reference_doctype(doc),
+            "document_name": get_reference_name(doc),
+            "subject": subject,
+            "from_user": doc.modified_by or doc.owner,
+            "email_content": frappe.render_template(self.message, context),
+            "attached_file": attachments and json.dumps(attachments[0]),
+        }
+        enqueue_create_notification(users, notification_doc)
+
+
+def get_reference_doctype(doc):
+    return doc.parenttype if doc.meta.istable else doc.doctype
+
+
+def get_reference_name(doc):
+    return doc.parent if doc.meta.istable else doc.name
+
+
+def enqueue_create_notification(users: list[str] | str, doc: dict):
+    """Send notification to users.
+
+    users: list of user emails or string of users with comma separated emails
+    doc: contents of `Notification` doc
+    """
+
+    # During installation of new site, enqueue_create_notification tries to connect to Redis.
+    # This breaks new site creation if Redis server is not running.
+    # We do not need any notifications in fresh installation
+    if frappe.flags.in_install:
+        return
+
+    doc = frappe._dict(doc)
+
+    if isinstance(users, str):
+        users = [user.strip() for user in users.split(",") if user.strip()]
+    users = list(set(users))
+
+    frappe.enqueue(
+        "frappe.desk.doctype.notification_log.notification_log.make_notification_logs",
+        doc=doc,
+        users=users,
+        now=frappe.flags.in_test,
+    )
