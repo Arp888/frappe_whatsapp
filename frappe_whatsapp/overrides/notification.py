@@ -1,6 +1,7 @@
 import json
 
 import frappe
+from frappe import _
 from frappe.desk.form.utils import get_pdf_link
 from frappe.email.doctype.notification.notification import Notification, get_context
 from frappe.integrations.utils import make_post_request
