@@ -63,7 +63,7 @@ frappe.notification = {
 							: null;
 					}
 				});
-			} else if (in_list(["WhatsApp", "SMS", "Whatsapp"], frm.doc.channel)) {
+			} else if (in_list(["WhatsApp", "SMS"], frm.doc.channel)) {
 				receiver_fields = $.map(fields, function (d) {
 					return d.options == "Phone" ? get_select_options(d) : null;
 				});
@@ -112,3 +112,134 @@ Last comment: {{ comments[-1].comment }} by {{ comments[-1].by }}
 		}
 	},
 };
+
+frappe.ui.form.on("Notification", {
+	onload: function (frm) {
+		frm.set_query("document_type", function () {
+			if (DATE_BASED_EVENTS.includes(frm.doc.event)) return;
+
+			return {
+				filters: {
+					istable: 0,
+				},
+			};
+		});
+		frm.set_query("print_format", function () {
+			return {
+				filters: {
+					doc_type: frm.doc.document_type,
+				},
+			};
+		});
+	},
+	refresh: function (frm) {
+		frm.trigger("load_template")
+		frappe.notification.setup_fieldname_select(frm);
+		frappe.notification.setup_example_message(frm);
+
+		frm.add_fetch("sender", "email_id", "sender_email");
+		frm.set_query("sender", () => {
+			return {
+				filters: {
+					enable_outgoing: 1,
+				},
+			};
+		});
+		frm.get_field("is_standard").toggle(frappe.boot.developer_mode);
+		frm.trigger("event");
+	},
+	document_type: function (frm) {
+		frappe.notification.setup_fieldname_select(frm);
+	},
+	view_properties: function (frm) {
+		frappe.route_options = { doc_type: frm.doc.document_type };
+		frappe.set_route("Form", "Customize Form");
+	},
+	event: function (frm) {
+		if (!DATE_BASED_EVENTS.includes(frm.doc.event) || frm.is_new()) return;
+
+		frm.add_custom_button(__("Get Alerts for Today"), function () {
+			frappe.call({
+				method: "frappe.email.doctype.notification.notification.get_documents_for_today",
+				args: {
+					notification: frm.doc.name,
+				},
+				callback: function (r) {
+					if (r.message && r.message.length > 0) {
+						frappe.msgprint(r.message.toString());
+					} else {
+						frappe.msgprint(__("No alerts for today"));
+					}
+				},
+			});
+		});
+	},
+	channel: function (frm) {
+		frm.toggle_reqd("recipients", frm.doc.channel == "Email");
+		frappe.notification.setup_fieldname_select(frm);
+		frappe.notification.setup_example_message(frm);
+		if (frm.doc.channel === "SMS" && frm.doc.__islocal) {
+			frm.set_df_property(
+				"channel",
+				"description",
+				`To use SMS Channel, initialize <a href="/app/sms-settings">SMS Settings</a>.`
+			);
+		} else {
+			frm.set_df_property("channel", "description", ` `);
+		}
+	},
+	custom_template: function(frm){
+		frm.trigger("load_template")
+	},
+	load_template: function(frm){
+		frappe.db.get_value(
+			"WhatsApp Templates",
+			frm.doc.template,
+			["template", "header_type"],
+			(r) => {
+				if (r && r.template) {
+					frm.set_value('custom_header_type', r.header_type)
+					frm.refresh_field("custom_header_type")
+					if (['DOCUMENT', "IMAGE"].includes(r.header_type)){
+						frm.toggle_display("custom_custom_attachment", true);
+						frm.toggle_display("custom__attach_document_print", true);
+						if (!frm.doc.custom_custom_attachment){
+							frm.set_value("custom__attach_document_print", 1)
+						}
+					}else{
+						frm.toggle_display("custom_custom_attachment", false);
+						frm.toggle_display("custom__attach_document_print", false);
+						frm.set_value("custom__attach_document_print", 0)
+						frm.set_value("custom_custom_attachment", 0)
+					}
+
+					frm.refresh_field("custom_custom_attachment")
+
+					frm.set_value("custom_code", r.template);
+					frm.refresh_field("custom_code")
+				}
+			}
+		)
+	},
+	custom_custom_attachment: function(frm){
+		if(frm.doc.custom_custom_attachment == 1 &&  ['DOCUMENT', "IMAGE"].includes(frm.doc.header_type)){
+			frm.set_df_property('file_name', 'reqd', frm.doc.custom_custom_attachment)
+		}else{
+			frm.set_df_property('file_name', 'reqd', 0)
+		}
+
+		// frm.toggle_display("custom__attach_document_print", !frm.doc.custom_custom_attachment);
+		if(frm.doc.header_type){
+			frm.set_value("custom__attach_document_print", !frm.doc.custom_custom_attachment)
+		}
+	},
+	custom__attach_document_print: function(frm){
+		// frm.toggle_display("custom_custom_attachment", !frm.doc.custom__attach_document_print);
+		if(['DOCUMENT', "IMAGE"].includes(frm.doc.header_type)){
+			frm.set_value("custom_custom_attachment", !frm.doc.custom__attach_document_print)
+		}
+	},
+	// reference_doctype: function (frm) {
+	// 	frappe.notification.setup_fieldname_select(frm);
+	// },
+});
