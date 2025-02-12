@@ -63,7 +63,7 @@ class WhatsappNotification(Notification):
 
     def send_template_message(self, doc: Document, context):
         """Specific to Document Event triggered Server Scripts."""
-        if self.disabled:
+        if not self.enabled:
             return
 
         doc_data = doc.as_dict()
