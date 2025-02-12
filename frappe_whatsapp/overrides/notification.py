@@ -93,14 +93,14 @@ class WhatsappNotification(Notification):
                     ):
                         value = str(doc_data[field.field_name])
 
-                    # if field.field_name == "owner" or field.field_name == "modified_by":
-                    #     value = frappe.get_fullname(doc_data[field.field_name])
+                    if field.field_name == "owner" or field.field_name == "modified_by":
+                        value = frappe.utils.get_fullname(doc_data[field.field_name])
 
                     parameters.append({"type": "text", "text": value})
 
                 components = [{"type": "body", "parameters": parameters}]
 
-            if self.attach_document_print:
+            if self.custom__attach_document_print:
                 # frappe.db.begin()
                 key = doc.get_document_share_key()  # noqa
                 frappe.db.commit()
@@ -128,17 +128,17 @@ class WhatsappNotification(Notification):
                 filename = f'{doc_data["name"]}.pdf'
                 url = f"{frappe.utils.get_url()}{link}&key={key}"
 
-            elif self.custom_attachment:
+            elif self.custom_custom_attachment:
                 filename = self.file_name
 
-                if self.attach_from_field:
-                    file_url = doc_data[self.attach_from_field]
+                if self.custom_attach_from_field:
+                    file_url = doc_data[self.custom_attach_from_field]
                     if not file_url.startswith("http"):
                         # get share key so that private files can be sent
                         key = doc.get_document_share_key()
                         file_url = f"{frappe.utils.get_url()}{file_url}&key={key}"
                 else:
-                    file_url = self.attach
+                    file_url = self.custom_attach
 
                 if file_url.startswith("http"):
                     url = f"{file_url}"
