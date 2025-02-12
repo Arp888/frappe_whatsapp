@@ -93,8 +93,8 @@ class WhatsappNotification(Notification):
                     ):
                         value = str(doc_data[field.field_name])
 
-                    if field.field_name == "owner" or field.field_name == "modified_by":
-                        value = frappe.get_fullname(doc_data[field.field_name])
+                    # if field.field_name == "owner" or field.field_name == "modified_by":
+                    #     value = frappe.get_fullname(doc_data[field.field_name])
 
                     parameters.append({"type": "text", "text": value})
 
