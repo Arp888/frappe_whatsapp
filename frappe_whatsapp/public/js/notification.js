@@ -194,7 +194,7 @@ frappe.ui.form.on("Notification", {
 	load_template: function(frm){
 		frappe.db.get_value(
 			"WhatsApp Templates",
-			frm.doc.template,
+			frm.doc.custom_template,
 			["template", "header_type"],
 			(r) => {
 				if (r && r.template) {
