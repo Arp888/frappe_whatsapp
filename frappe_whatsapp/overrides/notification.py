@@ -332,7 +332,7 @@ class WhatsappNotification(Notification):
                 error_message = response.get("Error", response.get("message"))
 
             frappe.msgprint(
-                f"Failed to trigger whatsapp message: {error_message}",
+                f"Failed to trigger whatsapp notification: {error_message}",
                 indicator="red",
                 alert=True,
             )
@@ -344,7 +344,7 @@ class WhatsappNotification(Notification):
             frappe.get_doc(
                 {
                     "doctype": "WhatsApp Notification Log",
-                    "template": self.template,
+                    "template": self.custom_template,
                     "meta_data": meta,
                 }
             ).insert(ignore_permissions=True)
