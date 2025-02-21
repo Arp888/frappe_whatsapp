@@ -165,135 +165,138 @@ class WhatsappNotification(Notification):
                     }
                 )
 
-            frappe.throw(recipients)
+            # frappe.throw(recipients)
             recipient_number = [x for x in recipients if x is not None]
             # frappe.log_error(
             #     title="Recipients Number",
             #     message=f"recipient number: {recipient_number}",
             # )
-            frappe.throw(recipient_number)
+            # frappe.throw(recipient_number)
+            print(recipients)
+            print(recipient_number)
 
-            for recipient in recipient_number:
-                number = recipient
-                if "{" in number:
-                    number = frappe.render_template(recipient, context)
-                phoneNumber = self.format_number(number)
+            for recipient in recipients:
+                if recipient is not None:
+                    number = recipient
+                    if "{" in number:
+                        number = frappe.render_template(recipient, context)
+                    phoneNumber = self.format_number(number)
 
-                data = {
-                    "messaging_product": "whatsapp",
-                    "to": self.format_number(phoneNumber),
-                    "type": "template",
-                    "template": {
-                        "name": template.actual_name,
-                        "language": {"code": template.language_code},
-                        "components": components,
-                    },
-                }
+                    data = {
+                        "messaging_product": "whatsapp",
+                        "to": self.format_number(phoneNumber),
+                        "type": "template",
+                        "template": {
+                            "name": template.actual_name,
+                            "language": {"code": template.language_code},
+                            "components": components,
+                        },
+                    }
 
-                # data = {
-                #     "messaging_product": "whatsapp",
-                #     "to": self.format_number(phoneNumber),
-                #     "type": "template",
-                #     "template": {
-                #         "name": template.actual_name,
-                #         "language": {"code": template.language_code},
-                #         "components": [],
-                #     },
-                # }
+                    # data = {
+                    #     "messaging_product": "whatsapp",
+                    #     "to": self.format_number(phoneNumber),
+                    #     "type": "template",
+                    #     "template": {
+                    #         "name": template.actual_name,
+                    #         "language": {"code": template.language_code},
+                    #         "components": [],
+                    #     },
+                    # }
 
-                # # Pass parameter values
-                # if self.custom_fields:
-                #     parameters = []
-                #     for field in self.custom_fields:
-                #         value = doc_data[field.field_name]
-                #         if isinstance(
-                #             doc_data[field.field_name],
-                #             (datetime.date, datetime.datetime),
-                #         ):
-                #             value = str(doc_data[field.field_name])
+                    # # Pass parameter values
+                    # if self.custom_fields:
+                    #     parameters = []
+                    #     for field in self.custom_fields:
+                    #         value = doc_data[field.field_name]
+                    #         if isinstance(
+                    #             doc_data[field.field_name],
+                    #             (datetime.date, datetime.datetime),
+                    #         ):
+                    #             value = str(doc_data[field.field_name])
 
-                #         if field.field_name == "owner":
-                #             value = frappe.get_fullname(doc.owner)
-                #         if field.field_name == "modified_by":
-                #             value = frappe.get_fullname(doc.modified_by)
+                    #         if field.field_name == "owner":
+                    #             value = frappe.get_fullname(doc.owner)
+                    #         if field.field_name == "modified_by":
+                    #             value = frappe.get_fullname(doc.modified_by)
 
-                #         parameters.append({"type": "text", "text": value})
+                    #         parameters.append({"type": "text", "text": value})
 
-                #     data["template"]["components"] = [
-                #         {"type": "body", "parameters": parameters}
-                #     ]
+                    #     data["template"]["components"] = [
+                    #         {"type": "body", "parameters": parameters}
+                    #     ]
 
-                # if self.attach_document_print:
-                #     # frappe.db.begin()
-                #     key = doc.get_document_share_key()  # noqa
-                #     frappe.db.commit()
-                #     print_format = "Standard"
-                #     doctype = frappe.get_doc("DocType", doc_data["doctype"])
-                #     if doctype.custom:
-                #         if doctype.default_print_format:
-                #             print_format = doctype.default_print_format
-                #     else:
-                #         default_print_format = frappe.db.get_value(
-                #             "Property Setter",
-                #             filters={
-                #                 "doc_type": doc_data["doctype"],
-                #                 "property": "default_print_format",
-                #             },
-                #             fieldname="value",
-                #         )
-                #         print_format = (
-                #             default_print_format
-                #             if default_print_format
-                #             else print_format
-                #         )
-                #     link = get_pdf_link(
-                #         doc_data["doctype"], doc_data["name"], print_format=print_format
-                #     )
+                    # if self.attach_document_print:
+                    #     # frappe.db.begin()
+                    #     key = doc.get_document_share_key()  # noqa
+                    #     frappe.db.commit()
+                    #     print_format = "Standard"
+                    #     doctype = frappe.get_doc("DocType", doc_data["doctype"])
+                    #     if doctype.custom:
+                    #         if doctype.default_print_format:
+                    #             print_format = doctype.default_print_format
+                    #     else:
+                    #         default_print_format = frappe.db.get_value(
+                    #             "Property Setter",
+                    #             filters={
+                    #                 "doc_type": doc_data["doctype"],
+                    #                 "property": "default_print_format",
+                    #             },
+                    #             fieldname="value",
+                    #         )
+                    #         print_format = (
+                    #             default_print_format
+                    #             if default_print_format
+                    #             else print_format
+                    #         )
+                    #     link = get_pdf_link(
+                    #         doc_data["doctype"], doc_data["name"], print_format=print_format
+                    #     )
 
-                #     filename = f'{doc_data["name"]}.pdf'
-                #     url = f"{frappe.utils.get_url()}{link}&key={key}"
+                    #     filename = f'{doc_data["name"]}.pdf'
+                    #     url = f"{frappe.utils.get_url()}{link}&key={key}"
 
-                # elif self.custom_attachment:
-                #     filename = self.file_name
+                    # elif self.custom_attachment:
+                    #     filename = self.file_name
 
-                #     if self.attach_from_field:
-                #         file_url = doc_data[self.attach_from_field]
-                #         if not file_url.startswith("http"):
-                #             # get share key so that private files can be sent
-                #             key = doc.get_document_share_key()
-                #             file_url = f"{frappe.utils.get_url()}{file_url}&key={key}"
-                #     else:
-                #         file_url = self.attach
+                    #     if self.attach_from_field:
+                    #         file_url = doc_data[self.attach_from_field]
+                    #         if not file_url.startswith("http"):
+                    #             # get share key so that private files can be sent
+                    #             key = doc.get_document_share_key()
+                    #             file_url = f"{frappe.utils.get_url()}{file_url}&key={key}"
+                    #     else:
+                    #         file_url = self.attach
 
-                #     if file_url.startswith("http"):
-                #         url = f"{file_url}"
-                #     else:
-                #         url = f"{frappe.utils.get_url()}{file_url}"
+                    #     if file_url.startswith("http"):
+                    #         url = f"{file_url}"
+                    #     else:
+                    #         url = f"{frappe.utils.get_url()}{file_url}"
 
-                # if template.header_type == "DOCUMENT":
-                #     data["template"]["components"].append(
-                #         {
-                #             "type": "header",
-                #             "parameters": [
-                #                 {
-                #                     "type": "document",
-                #                     "document": {"link": url, "filename": filename},
-                #                 }
-                #             ],
-                #         }
-                #     )
-                # elif template.header_type == "IMAGE":
-                #     data["template"]["components"].append(
-                #         {
-                #             "type": "header",
-                #             "parameters": [{"type": "image", "image": {"link": url}}],
-                #         }
-                #     )
-                # self.content_type = template.header_type.lower()
+                    # if template.header_type == "DOCUMENT":
+                    #     data["template"]["components"].append(
+                    #         {
+                    #             "type": "header",
+                    #             "parameters": [
+                    #                 {
+                    #                     "type": "document",
+                    #                     "document": {"link": url, "filename": filename},
+                    #                 }
+                    #             ],
+                    #         }
+                    #     )
+                    # elif template.header_type == "IMAGE":
+                    #     data["template"]["components"].append(
+                    #         {
+                    #             "type": "header",
+                    #             "parameters": [{"type": "image", "image": {"link": url}}],
+                    #         }
+                    #     )
+                    # self.content_type = template.header_type.lower()
 
-                self.content_type = template.header_type.lower()
+                    self.content_type = template.header_type.lower()
 
-                self.notify(data)
+                    self.notify(data)
 
     def notify(self, data):
         """Notify."""
