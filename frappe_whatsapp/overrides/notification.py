@@ -81,6 +81,8 @@ class WhatsappNotification(Notification):
         if template:
             recipients = self.get_receiver_list(doc, context)
 
+            frappe.msgprint(f"{recipients}")
+
             # Pass parameter values
             components = []
             if self.custom_fields:
@@ -172,8 +174,6 @@ class WhatsappNotification(Notification):
             #     message=f"recipient number: {recipient_number}",
             # )
             # frappe.throw(recipient_number)
-            print(recipients)
-            print(recipient_number)
 
             for recipient in recipients:
                 if recipient is not None:
