@@ -165,9 +165,12 @@ class WhatsappNotification(Notification):
                     }
                 )
 
+            frappe.log_error(title="Recipients", message=f"recipient: {recipients}")
             recipient_number = [x for x in recipients if x is not None]
-            frappe.log_error(recipients, "recipient_list")
-            frappe.log_error(recipient_number, "recipient_number")
+            frappe.log_error(
+                title="Recipients Number",
+                message=f"recipient number: {recipient_number}",
+            )
 
             for recipient in recipient_number:
                 number = recipient
