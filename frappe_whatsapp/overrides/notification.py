@@ -165,10 +165,12 @@ class WhatsappNotification(Notification):
                     }
                 )
 
-            for recipient in recipients:
+            recipient_number = [x for x in recipients if x is not None]
+
+            for recipient in recipient_number:
                 number = recipient
-                # if "{" in number:
-                #     number = frappe.render_template(recipient, context)
+                if "{" in number:
+                    number = frappe.render_template(recipient, context)
                 phoneNumber = self.format_number(number)
 
                 data = {
