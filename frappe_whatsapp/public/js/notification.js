@@ -63,7 +63,7 @@ frappe.notification = {
 							: null;
 					}
 				});
-			} else if (in_list(["WhatsApp", "SMS"], frm.doc.channel)) {
+			} else if (in_list(["Whatsapp", "SMS"], frm.doc.channel)) {
 				receiver_fields = $.map(fields, function (d) {
 					return d.options == "Phone" ? get_select_options(d) : null;
 				});
