@@ -78,10 +78,13 @@ class WhatsappNotification(Notification):
             "WhatsApp Templates", self.custom_template, fieldname="*"
         )
 
+        recipients = self.get_receiver_list(doc, context)
+        frappe.msgprint(f"{recipients}", indicator="green")
+
         if template:
             recipients = self.get_receiver_list(doc, context)
 
-            frappe.msgprint(f"{recipients}")
+            frappe.msgprint(f"{recipients}", indicator="green", alert=True)
 
             # Pass parameter values
             components = []
