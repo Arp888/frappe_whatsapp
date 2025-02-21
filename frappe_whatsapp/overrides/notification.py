@@ -167,8 +167,8 @@ class WhatsappNotification(Notification):
 
             for recipient in recipients:
                 number = recipient
-                if "{" in number:
-                    number = frappe.render_template(recipient, context)
+                # if "{" in number:
+                #     number = frappe.render_template(recipient, context)
                 phoneNumber = self.format_number(number)
 
                 data = {
