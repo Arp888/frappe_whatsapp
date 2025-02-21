@@ -364,10 +364,14 @@ class WhatsappNotification(Notification):
 
     def format_number(self, number):
         """Format number."""
-        if number.startswith("+"):
-            number = number[1 : len(number)]
+        phoneNumber = number.replace("+", "").replace("-", "")
+        if phoneNumber.startswith("+"):
+            phoneNumber = phoneNumber[1 : len(phoneNumber)]
 
-        return number
+        if phoneNumber.startswith("0"):
+            phoneNumber = "62" + phoneNumber[1 : len(phoneNumber)]
+
+        return phoneNumber
 
     def create_system_notification(self, doc, context):
         subject = self.subject
