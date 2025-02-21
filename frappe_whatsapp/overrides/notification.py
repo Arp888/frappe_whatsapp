@@ -91,7 +91,12 @@ class WhatsappNotification(Notification):
                         doc_data[field.field_name],
                         (datetime.date, datetime.datetime),
                     ):
-                        value = str(doc_data[field.field_name])
+                        value = str(
+                            frappe.utils.formatdate(
+                                doc_data[field.field_name], "d MMM yyyy"
+                            )
+                        )
+                        # value = str(doc_data[field.field_name])
 
                     if field.field_name == "owner" or field.field_name == "modified_by":
                         value = frappe.utils.get_fullname(doc_data[field.field_name])
