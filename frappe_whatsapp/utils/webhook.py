@@ -65,7 +65,7 @@ def post(payload):
 
     try:
         # json_data = data.get("entry", [])
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=frappe.as_json(payload), timeout=10)
         response.raise_for_status()
     except Exception as e:
         frappe.log_error(title="n8n Forward Error", message=str(e))
