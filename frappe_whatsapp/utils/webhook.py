@@ -46,31 +46,33 @@ def get():
 
 
 def post(payload):
-    """Post."""
-    # data = frappe.local.form_dict
-    # frappe.get_doc(
-    #     {
-    #         "doctype": "WhatsApp Notification Log",
-    #         "template": "Webhook",
-    #         "meta_data": json.dumps(data),
-    #     }
-    # ).insert(ignore_permissions=True)
-
-    frappe.log_error(title="WA Data Incoming", message=frappe.as_json(payload))
-
     url = frappe.conf.get("n8n_wa_webhook_url")
-                
+    
+    # Debug: Catat data yang masuk ke fungsi ini di Error Log
+    frappe.log_error(title="Debug n8n Payload", message=frappe.as_json(payload))
+
     if not url:
-        frappe.throw(_("n8n webhook URL not configure."))
+        frappe.log_error(title="n8n Config Error", message="URL Webhook tidak ditemukan di conf")
+        return
 
     try:
-        # json_data = data.get("entry", [])
-        response = requests.post(url, json=frappe.as_json(payload), timeout=10)
+        # Gunakan json.dumps untuk memastikan serialisasi manual jika diperlukan
+        response = requests.post(
+            url, 
+            data=json.dumps(payload), 
+            headers={'Content-Type': 'application/json'}, 
+            timeout=15
+        )
+        
+        # Catat status response dari n8n
+        if response.status_code != 200:
+            frappe.log_error(title="n8n Response Error", message=f"Status: {response.status_code}, Text: {response.text}")
+            
         response.raise_for_status()
-    except Exception as e:
-        frappe.log_error(title="n8n Forward Error", message=str(e))
-
-    return
+        
+    except Exception:
+        # Gunakan get_traceback() untuk melihat detail baris kode yang error
+        frappe.log_error(title="n8n Forward Traceback", message=frappe.get_traceback())
 
     # messages = []
     # try:
