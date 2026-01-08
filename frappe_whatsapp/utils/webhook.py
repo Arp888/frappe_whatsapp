@@ -5,6 +5,7 @@ import json
 import time
 
 import frappe
+from frappe import _
 import requests
 from frappe.integrations.utils import make_post_request
 from frappe.query_builder import Order
@@ -84,6 +85,20 @@ def post():
 
                 msg = ""
 
+                if text.strip().lower() in ["in", "checkin", "out", "checkout", "masuk", "pulang"]:
+                    url = frappe.conf.get("n8n_wa_webhook_url")
+
+                    if not url:
+                        frappe.throw(_("n8n webhook URL not configure."))
+
+                    requests.post(
+                        url,
+                        json=messages,
+                    )
+
+                    return "Ok"
+
+
                 if text.lower() == "hello":
                     msg = "Hi there! How can I help you?"
                     send_response(sender, msg)
@@ -156,6 +171,10 @@ def post():
                         "content_type": "flow",
                     }
                 ).insert(ignore_permissions=True)
+                
+
+
+
             elif message_type in ["image", "audio", "video", "document"]:
                 settings = frappe.get_doc(
                     "WhatsApp Settings",
