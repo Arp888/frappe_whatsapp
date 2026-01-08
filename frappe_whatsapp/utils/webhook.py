@@ -65,9 +65,10 @@ def post():
 
     try:
         json_data = data.get("entry", [])
-        requests(url, json=json_data)
+        response = requests.post(url, json=json_data, timeout=10)
+        response.raise_for_status()
     except Exception as e:
-        frappe.log_error(title="Failed to send to n8n", message=str(e))
+        frappe.log_error(title="n8n Forward Error", message=frappe.get_traceback())
 
     return
 
