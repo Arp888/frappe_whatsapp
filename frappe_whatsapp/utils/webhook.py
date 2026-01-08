@@ -56,6 +56,21 @@ def post():
         }
     ).insert(ignore_permissions=True)
 
+    frappe.log_error(title="WA Data Incoming", message=frappe.as_json(data))
+
+    url = frappe.conf.get("n8n_wa_webhook_url")
+                
+    if not url:
+        frappe.throw(_("n8n webhook URL not configure."))
+
+    try:
+        json_data = data.get("entry", [])
+        make_post_request(url, data=json.dumps(json_data))
+    except Exception as e:
+        frappe.log_error(title="Failed to send to n8n", message=str(e))
+
+    return "Ok"
+
     messages = []
     try:
         messages = data["entry"][0]["changes"][0]["value"].get("messages", [])
