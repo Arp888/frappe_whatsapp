@@ -65,7 +65,7 @@ def post():
 
     try:
         json_data = data.get("entry", [])
-        make_post_request(url, data=json.dumps(json_data))
+        requests(url, json=json_data)
     except Exception as e:
         frappe.log_error(title="Failed to send to n8n", message=str(e))
 
