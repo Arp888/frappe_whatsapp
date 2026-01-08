@@ -152,6 +152,7 @@ def post():
 
             elif message_type == "location":
                 frappe.log_error(title="WA Data Incoming", message=frappe.as_json(data))
+                frappe.log_error(title="Location", message=frappe.as_json(data))
 
                 frappe.get_doc(
                     {
