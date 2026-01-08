@@ -67,6 +67,11 @@ def post():
             message_type = message["type"]
             is_reply = True if message.get("context") else False
             reply_to_message_id = message["context"]["id"] if is_reply else None
+
+            if message_type["text"]["body"] in 
+
+
+
             if message_type == "text":
                 frappe.get_doc(
                     {
@@ -147,6 +152,33 @@ def post():
                         msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
 
                     send_response(sender, msg)
+
+            elif message_type == "location":
+                frappe.get_doc(
+                    {
+                        "doctype": "WhatsApp Message",
+                        "type": "Incoming",
+                        "from": message["from"],
+                        "message": message["location"],
+                        "message_id": message["id"],
+                        "reply_to_message_id": reply_to_message_id,
+                        "is_reply": is_reply,
+                        "content_type": message_type,
+                    }
+                ).insert(ignore_permissions=True)
+
+                url = frappe.conf.get("n8n_wa_webhook_url")
+
+                if not url:
+                    frappe.throw(_("n8n webhook URL not configure."))
+
+                requests.post(
+                    url,
+                    json=data.get("entry", []),
+                )
+
+                return "Ok"
+
 
             elif message_type == "reaction":
                 frappe.get_doc(
