@@ -86,7 +86,7 @@ def post():
 
                 msg = ""
 
-                if text.strip().lower() in ["in", "checkin", "out", "checkout", "masuk", "pulang"]:
+                if text.lower() in ["in", "checkin", "out", "checkout", "masuk", "pulang"]:
                     url = frappe.conf.get("n8n_wa_webhook_url")
 
                     if not url:
