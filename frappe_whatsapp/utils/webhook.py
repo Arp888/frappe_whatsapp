@@ -151,7 +151,7 @@ def post():
                     send_response(sender, msg)
 
             elif message_type == "location":
-                frappe.log_error('Triggered')
+                frappe.log_error(title="WA Data Incoming", message=frappe.as_json(data))
 
                 frappe.get_doc(
                     {
@@ -173,8 +173,11 @@ def post():
 
                 json_data = data["entry"]
 
-                make_post_request(url, data=json.dumps(json_data))
-                
+                try:
+                    make_post_request(url, data=json.dumps(json_data))
+                except Exception as e:
+                    frappe.log_error(title="Failed to send to n8n", message=str(e))
+                               
 
             elif message_type == "reaction":
                 frappe.get_doc(
