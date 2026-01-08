@@ -44,8 +44,8 @@ def get():
 
     return Response(hub_challenge, status=200)
 
-
-def post(payload):
+def post():
+    payload = frappe.local.form_dict
     url = frappe.conf.get("n8n_wa_webhook_url")
     
     # Debug: Catat data yang masuk ke fungsi ini di Error Log
@@ -73,6 +73,33 @@ def post(payload):
     except Exception:
         # Gunakan get_traceback() untuk melihat detail baris kode yang error
         frappe.log_error(title="n8n Forward Traceback", message=frappe.get_traceback())
+
+# def post(data):
+#     """Post."""
+#     data = frappe.local.form_dict
+#     frappe.get_doc(
+#         {
+#             "doctype": "WhatsApp Notification Log",
+#             "template": "Webhook",
+#             "meta_data": json.dumps(data),
+#         }
+#     ).insert(ignore_permissions=True)
+
+#     frappe.log_error(title="WA Data Incoming", message=frappe.as_json(data))
+
+#     url = frappe.conf.get("n8n_wa_webhook_url")
+                
+#     if not url:
+#         frappe.throw(_("n8n webhook URL not configure."))
+
+#     try:
+#         json_data = data.get("entry", [])
+#         response = requests.post(url, json=json_data, timeout=10)
+#         response.raise_for_status()
+#     except Exception as e:
+#         frappe.log_error(title="n8n Forward Error", message=frappe.get_traceback())
+
+#     return
 
     # messages = []
     # try:
