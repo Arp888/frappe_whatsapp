@@ -93,7 +93,7 @@ def post():
 
                     requests.post(
                         url,
-                        json=messages,
+                        json=json.dumps(data),
                     )
 
                     return "Ok"
