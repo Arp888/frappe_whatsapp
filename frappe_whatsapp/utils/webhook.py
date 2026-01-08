@@ -92,10 +92,14 @@ def post():
                     if not url:
                         frappe.throw(_("n8n webhook URL not configure."))
 
-                    requests.post(
-                        url,
-                        json=data["entry"],
-                    )
+                    json_data = data["entry"]
+
+                    make_post_request(url, data=json.dumps(json_data))
+
+                    # requests.post(
+                    #     url,
+                    #     json=data["entry"],
+                    # )
 
                 if text.lower() == "hello":
                     msg = "Hi there! How can I help you?"
@@ -163,16 +167,14 @@ def post():
                 ).insert(ignore_permissions=True)
 
                 url = frappe.conf.get("n8n_wa_webhook_url")
-                frappe.log_error('url')
-
+                
                 if not url:
                     frappe.throw(_("n8n webhook URL not configure."))
 
-                requests.post(
-                    url,
-                    json=data["entry"],
-                )
+                json_data = data["entry"]
 
+                make_post_request(url, data=json.dumps(json_data))
+                
 
             elif message_type == "reaction":
                 frappe.get_doc(
