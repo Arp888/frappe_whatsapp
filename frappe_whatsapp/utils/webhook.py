@@ -150,6 +150,8 @@ def post():
                     send_response(sender, msg)
 
             elif message_type == "location":
+                print("Triggered")
+
                 frappe.get_doc(
                     {
                         "doctype": "WhatsApp Message",
@@ -164,6 +166,7 @@ def post():
                 ).insert(ignore_permissions=True)
 
                 url = frappe.conf.get("n8n_wa_webhook_url")
+                print(url)
 
                 if not url:
                     frappe.throw(_("n8n webhook URL not configure."))
