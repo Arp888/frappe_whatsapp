@@ -202,8 +202,6 @@ def post():
                         "content_type": "flow",
                     }
                 ).insert(ignore_permissions=True)
-                
-
 
 
             elif message_type in ["image", "audio", "video", "document"]:
@@ -273,17 +271,18 @@ def post():
                         "content_type": message_type,
                     }
                 ).insert(ignore_permissions=True)
-            else:
-                frappe.get_doc(
-                    {
-                        "doctype": "WhatsApp Message",
-                        "type": "Incoming",
-                        "from": message["from"],
-                        "message_id": message["id"],
-                        "message": message[message_type].get(message_type),
-                        "content_type": message_type,
-                    }
-                ).insert(ignore_permissions=True)
+            
+            # else:
+            #     frappe.get_doc(
+            #         {
+            #             "doctype": "WhatsApp Message",
+            #             "type": "Incoming",
+            #             "from": message["from"],
+            #             "message_id": message["id"],
+            #             "message": message[message_type].get(message_type),
+            #             "content_type": message_type,
+            #         }
+            #     ).insert(ignore_permissions=True)
 
     else:
         changes = None
