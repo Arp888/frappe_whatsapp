@@ -94,7 +94,7 @@ def post():
 
                     requests.post(
                         url,
-                        json=data.get("entry", []),
+                        json=data["entry"],
                     )
 
                     return "Ok"
@@ -170,7 +170,7 @@ def post():
 
                 requests.post(
                     url,
-                    json=data.get("entry", []),
+                    json=data["entry"],
                 )
 
                 return "Ok"
