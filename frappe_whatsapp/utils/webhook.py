@@ -67,11 +67,7 @@ def post():
             message_type = message["type"]
             is_reply = True if message.get("context") else False
             reply_to_message_id = message["context"]["id"] if is_reply else None
-
-            if message_type["text"]["body"] in 
-
-
-
+  
             if message_type == "text":
                 frappe.get_doc(
                     {
