@@ -93,7 +93,7 @@ def post():
 
                     requests.post(
                         url,
-                        json=json.dumps(data),
+                        json=data.get("entry", []),
                     )
 
                     return "Ok"
