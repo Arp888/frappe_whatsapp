@@ -69,245 +69,245 @@ def post():
     except Exception as e:
         frappe.log_error(title="Failed to send to n8n", message=str(e))
 
-    return
+    return "Ok"
 
-    # messages = []
-    # try:
-    #     messages = data["entry"][0]["changes"][0]["value"].get("messages", [])
-    # except KeyError:
-    #     messages = data["entry"]["changes"][0]["value"].get("messages", [])
+    messages = []
+    try:
+        messages = data["entry"][0]["changes"][0]["value"].get("messages", [])
+    except KeyError:
+        messages = data["entry"]["changes"][0]["value"].get("messages", [])
 
-    # if messages:
-    #     for message in messages:
-    #         message_type = message["type"]
-    #         is_reply = True if message.get("context") else False
-    #         reply_to_message_id = message["context"]["id"] if is_reply else None
+    if messages:
+        for message in messages:
+            message_type = message["type"]
+            is_reply = True if message.get("context") else False
+            reply_to_message_id = message["context"]["id"] if is_reply else None
   
-    #         if message_type == "text":
-    #             frappe.get_doc(
-    #                 {
-    #                     "doctype": "WhatsApp Message",
-    #                     "type": "Incoming",
-    #                     "from": message["from"],
-    #                     "message": message["text"]["body"],
-    #                     "message_id": message["id"],
-    #                     "reply_to_message_id": reply_to_message_id,
-    #                     "is_reply": is_reply,
-    #                     "content_type": message_type,
-    #                 }
-    #             ).insert(ignore_permissions=True)
-    #             sender = message["from"]
-    #             text = message["text"]["body"]
+            if message_type == "text":
+                frappe.get_doc(
+                    {
+                        "doctype": "WhatsApp Message",
+                        "type": "Incoming",
+                        "from": message["from"],
+                        "message": message["text"]["body"],
+                        "message_id": message["id"],
+                        "reply_to_message_id": reply_to_message_id,
+                        "is_reply": is_reply,
+                        "content_type": message_type,
+                    }
+                ).insert(ignore_permissions=True)
+                sender = message["from"]
+                text = message["text"]["body"]
 
-    #             msg = ""
+                msg = ""
 
-    #             if text.lower() in ["in", "checkin", "out", "checkout", "masuk", "pulang"]:
-    #                 url = frappe.conf.get("n8n_wa_webhook_url")
+                if text.lower() in ["in", "checkin", "out", "checkout", "masuk", "pulang"]:
+                    url = frappe.conf.get("n8n_wa_webhook_url")
 
-    #                 if not url:
-    #                     frappe.throw(_("n8n webhook URL not configure."))
+                    if not url:
+                        frappe.throw(_("n8n webhook URL not configure."))
 
-    #                 json_data = data["entry"]
+                    json_data = data["entry"]
 
-    #                 make_post_request(url, data=json.dumps(json_data))
+                    make_post_request(url, data=json.dumps(json_data))
 
-    #                 # requests.post(
-    #                 #     url,
-    #                 #     json=data["entry"],
-    #                 # )
+                    # requests.post(
+                    #     url,
+                    #     json=data["entry"],
+                    # )
 
-    #             if text.lower() == "hello":
-    #                 msg = "Hi there! How can I help you?"
-    #                 send_response(sender, msg)
-    #             else:
-    #                 filtered_text = filter_text_message(text)
-    #                 if filtered_text:
-    #                     keyword = filtered_text["keyword"]
-    #                     filters = frappe._dict(
-    #                         {
-    #                             "site_name": filtered_text["site_name"],
-    #                             "year": filtered_text["year"],
-    #                         }
-    #                     )
-    #                     if keyword.lower() == "production":
-    #                         prod = get_yearly_production_data(filters)
-    #                         if prod:
-    #                             prod_last_update = frappe.utils.format_datetime(
-    #                                 prod.last_posting_date, "d MMM yyyy H:m"
-    #                             )
+                if text.lower() == "hello":
+                    msg = "Hi there! How can I help you?"
+                    send_response(sender, msg)
+                else:
+                    filtered_text = filter_text_message(text)
+                    if filtered_text:
+                        keyword = filtered_text["keyword"]
+                        filters = frappe._dict(
+                            {
+                                "site_name": filtered_text["site_name"],
+                                "year": filtered_text["year"],
+                            }
+                        )
+                        if keyword.lower() == "production":
+                            prod = get_yearly_production_data(filters)
+                            if prod:
+                                prod_last_update = frappe.utils.format_datetime(
+                                    prod.last_posting_date, "d MMM yyyy H:m"
+                                )
 
-    #                             msg = f"Total produksi (_update {prod_last_update}_)\n"
-    #                             for key, val in prod.prod_data.items():
-    #                                 tonnage = frappe.utils.fmt_money(val["tonnage"], 2)
-    #                                 msg += f"- {key} = *{tonnage}* {val['uom']}\n"
-    #                         else:
-    #                             msg = "Production data is not available"
-    #                     elif keyword.lower() == "stockpile":
-    #                         sbal = get_stockpile_balance_report(filters)
-    #                         if sbal:
-    #                             last_update = frappe.utils.format_datetime(
-    #                                 sbal["last_update"], "d MMM yyyy H:m"
-    #                             )
-    #                             msg = f"Stockpile balance (_update {last_update}_)\n"
-    #                             for sb in sbal["balance"]:
-    #                                 msg += f"- {sb} = "
-    #                                 for dt in sbal["balance"][sb]:
-    #                                     qty_survey = frappe.utils.fmt_money(
-    #                                         sbal["balance"][sb][dt]["qty_by_survey"], 2
-    #                                     )
-    #                                     msg += f"*{qty_survey}* {sbal['balance'][sb][dt]['uom']}\n"
-    #                         else:
-    #                             msg = "Stobkpile balance data is not available"
-    #                     else:
-    #                         msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
-    #                 else:
-    #                     msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
+                                msg = f"Total produksi (_update {prod_last_update}_)\n"
+                                for key, val in prod.prod_data.items():
+                                    tonnage = frappe.utils.fmt_money(val["tonnage"], 2)
+                                    msg += f"- {key} = *{tonnage}* {val['uom']}\n"
+                            else:
+                                msg = "Production data is not available"
+                        elif keyword.lower() == "stockpile":
+                            sbal = get_stockpile_balance_report(filters)
+                            if sbal:
+                                last_update = frappe.utils.format_datetime(
+                                    sbal["last_update"], "d MMM yyyy H:m"
+                                )
+                                msg = f"Stockpile balance (_update {last_update}_)\n"
+                                for sb in sbal["balance"]:
+                                    msg += f"- {sb} = "
+                                    for dt in sbal["balance"][sb]:
+                                        qty_survey = frappe.utils.fmt_money(
+                                            sbal["balance"][sb][dt]["qty_by_survey"], 2
+                                        )
+                                        msg += f"*{qty_survey}* {sbal['balance'][sb][dt]['uom']}\n"
+                            else:
+                                msg = "Stobkpile balance data is not available"
+                        else:
+                            msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
+                    else:
+                        msg = "Please type your keyword with correct format (eg: 'production ptp 2025' or 'stockpile ptp 2025')"
 
-    #                 send_response(sender, msg)
+                    send_response(sender, msg)
 
-    #         elif message_type == "location":
-    #             frappe.log_error(title="WA Data Incoming", message=frappe.as_json(data))
-    #             frappe.log_error(title="Location", message=frappe.as_json(data))
+            elif message_type == "location":
+                frappe.log_error(title="WA Data Incoming", message=frappe.as_json(data))
+                frappe.log_error(title="Location", message=frappe.as_json(data))
 
-    #             frappe.get_doc(
-    #                 {
-    #                     "doctype": "WhatsApp Message",
-    #                     "type": "Incoming",
-    #                     "from": message["from"],
-    #                     "message": message["location"],
-    #                     "message_id": message["id"],
-    #                     "reply_to_message_id": reply_to_message_id,
-    #                     "is_reply": is_reply,
-    #                     "content_type": message_type,
-    #                 }
-    #             ).insert(ignore_permissions=True)
+                frappe.get_doc(
+                    {
+                        "doctype": "WhatsApp Message",
+                        "type": "Incoming",
+                        "from": message["from"],
+                        "message": message["location"],
+                        "message_id": message["id"],
+                        "reply_to_message_id": reply_to_message_id,
+                        "is_reply": is_reply,
+                        "content_type": message_type,
+                    }
+                ).insert(ignore_permissions=True)
 
-    #             url = frappe.conf.get("n8n_wa_webhook_url")
+                url = frappe.conf.get("n8n_wa_webhook_url")
                 
-    #             if not url:
-    #                 frappe.throw(_("n8n webhook URL not configure."))
+                if not url:
+                    frappe.throw(_("n8n webhook URL not configure."))
 
-    #             json_data = data["entry"]
+                json_data = data["entry"]
 
-    #             try:
-    #                 make_post_request(url, data=json.dumps(json_data))
-    #             except Exception as e:
-    #                 frappe.log_error(title="Failed to send to n8n", message=str(e))
+                try:
+                    make_post_request(url, data=json.dumps(json_data))
+                except Exception as e:
+                    frappe.log_error(title="Failed to send to n8n", message=str(e))
                                
 
-    #         elif message_type == "reaction":
-    #             frappe.get_doc(
-    #                 {
-    #                     "doctype": "WhatsApp Message",
-    #                     "type": "Incoming",
-    #                     "from": message["from"],
-    #                     "message": message["reaction"]["emoji"],
-    #                     "reply_to_message_id": message["reaction"]["message_id"],
-    #                     "message_id": message["id"],
-    #                     "content_type": "reaction",
-    #                 }
-    #             ).insert(ignore_permissions=True)
-    #         elif message_type == "interactive":
-    #             frappe.get_doc(
-    #                 {
-    #                     "doctype": "WhatsApp Message",
-    #                     "type": "Incoming",
-    #                     "from": message["from"],
-    #                     "message": message["interactive"]["nfm_reply"]["response_json"],
-    #                     "message_id": message["id"],
-    #                     "content_type": "flow",
-    #                 }
-    #             ).insert(ignore_permissions=True)
+            elif message_type == "reaction":
+                frappe.get_doc(
+                    {
+                        "doctype": "WhatsApp Message",
+                        "type": "Incoming",
+                        "from": message["from"],
+                        "message": message["reaction"]["emoji"],
+                        "reply_to_message_id": message["reaction"]["message_id"],
+                        "message_id": message["id"],
+                        "content_type": "reaction",
+                    }
+                ).insert(ignore_permissions=True)
+            elif message_type == "interactive":
+                frappe.get_doc(
+                    {
+                        "doctype": "WhatsApp Message",
+                        "type": "Incoming",
+                        "from": message["from"],
+                        "message": message["interactive"]["nfm_reply"]["response_json"],
+                        "message_id": message["id"],
+                        "content_type": "flow",
+                    }
+                ).insert(ignore_permissions=True)
 
 
-    #         elif message_type in ["image", "audio", "video", "document"]:
-    #             settings = frappe.get_doc(
-    #                 "WhatsApp Settings",
-    #                 "WhatsApp Settings",
-    #             )
-    #             token = settings.get_password("token")
-    #             url = f"{settings.url}/{settings.version}/"
+            elif message_type in ["image", "audio", "video", "document"]:
+                settings = frappe.get_doc(
+                    "WhatsApp Settings",
+                    "WhatsApp Settings",
+                )
+                token = settings.get_password("token")
+                url = f"{settings.url}/{settings.version}/"
 
-    #             media_id = message[message_type]["id"]
-    #             headers = {"Authorization": "Bearer " + token}
-    #             response = requests.get(f"{url}{media_id}/", headers=headers)
+                media_id = message[message_type]["id"]
+                headers = {"Authorization": "Bearer " + token}
+                response = requests.get(f"{url}{media_id}/", headers=headers)
 
-    #             if response.status_code == 200:
-    #                 media_data = response.json()
-    #                 media_url = media_data.get("url")
-    #                 mime_type = media_data.get("mime_type")
-    #                 file_extension = mime_type.split("/")[1]
+                if response.status_code == 200:
+                    media_data = response.json()
+                    media_url = media_data.get("url")
+                    mime_type = media_data.get("mime_type")
+                    file_extension = mime_type.split("/")[1]
 
-    #                 media_response = requests.get(media_url, headers=headers)
-    #                 if media_response.status_code == 200:
+                    media_response = requests.get(media_url, headers=headers)
+                    if media_response.status_code == 200:
 
-    #                     file_data = media_response.content
-    #                     file_name = (
-    #                         f"{frappe.generate_hash(length=10)}.{file_extension}"
-    #                     )
+                        file_data = media_response.content
+                        file_name = (
+                            f"{frappe.generate_hash(length=10)}.{file_extension}"
+                        )
 
-    #                     message_doc = frappe.get_doc(
-    #                         {
-    #                             "doctype": "WhatsApp Message",
-    #                             "type": "Incoming",
-    #                             "from": message["from"],
-    #                             "message_id": message["id"],
-    #                             "reply_to_message_id": reply_to_message_id,
-    #                             "is_reply": is_reply,
-    #                             "message": message[message_type].get(
-    #                                 "caption", f"/files/{file_name}"
-    #                             ),
-    #                             "content_type": message_type,
-    #                         }
-    #                     ).insert(ignore_permissions=True)
+                        message_doc = frappe.get_doc(
+                            {
+                                "doctype": "WhatsApp Message",
+                                "type": "Incoming",
+                                "from": message["from"],
+                                "message_id": message["id"],
+                                "reply_to_message_id": reply_to_message_id,
+                                "is_reply": is_reply,
+                                "message": message[message_type].get(
+                                    "caption", f"/files/{file_name}"
+                                ),
+                                "content_type": message_type,
+                            }
+                        ).insert(ignore_permissions=True)
 
-    #                     file = frappe.get_doc(
-    #                         {
-    #                             "doctype": "File",
-    #                             "file_name": file_name,
-    #                             "attached_to_doctype": "WhatsApp Message",
-    #                             "attached_to_name": message_doc.name,
-    #                             "content": file_data,
-    #                             "attached_to_field": "attach",
-    #                         }
-    #                     ).save(ignore_permissions=True)
+                        file = frappe.get_doc(
+                            {
+                                "doctype": "File",
+                                "file_name": file_name,
+                                "attached_to_doctype": "WhatsApp Message",
+                                "attached_to_name": message_doc.name,
+                                "content": file_data,
+                                "attached_to_field": "attach",
+                            }
+                        ).save(ignore_permissions=True)
 
-    #                     message_doc.attach = file.file_url
-    #                     message_doc.save()
-    #         elif message_type == "button":
-    #             frappe.get_doc(
-    #                 {
-    #                     "doctype": "WhatsApp Message",
-    #                     "type": "Incoming",
-    #                     "from": message["from"],
-    #                     "message": message["button"]["text"],
-    #                     "message_id": message["id"],
-    #                     "reply_to_message_id": reply_to_message_id,
-    #                     "is_reply": is_reply,
-    #                     "content_type": message_type,
-    #                 }
-    #             ).insert(ignore_permissions=True)
+                        message_doc.attach = file.file_url
+                        message_doc.save()
+            elif message_type == "button":
+                frappe.get_doc(
+                    {
+                        "doctype": "WhatsApp Message",
+                        "type": "Incoming",
+                        "from": message["from"],
+                        "message": message["button"]["text"],
+                        "message_id": message["id"],
+                        "reply_to_message_id": reply_to_message_id,
+                        "is_reply": is_reply,
+                        "content_type": message_type,
+                    }
+                ).insert(ignore_permissions=True)
             
-    #         # else:
-    #         #     frappe.get_doc(
-    #         #         {
-    #         #             "doctype": "WhatsApp Message",
-    #         #             "type": "Incoming",
-    #         #             "from": message["from"],
-    #         #             "message_id": message["id"],
-    #         #             "message": message[message_type].get(message_type),
-    #         #             "content_type": message_type,
-    #         #         }
-    #         #     ).insert(ignore_permissions=True)
+            # else:
+            #     frappe.get_doc(
+            #         {
+            #             "doctype": "WhatsApp Message",
+            #             "type": "Incoming",
+            #             "from": message["from"],
+            #             "message_id": message["id"],
+            #             "message": message[message_type].get(message_type),
+            #             "content_type": message_type,
+            #         }
+            #     ).insert(ignore_permissions=True)
 
-    # else:
-    #     changes = None
-    #     try:
-    #         changes = data["entry"][0]["changes"][0]
-    #     except KeyError:
-    #         changes = data["entry"]["changes"][0]
-    #     update_status(changes)
-    # return
+    else:
+        changes = None
+        try:
+            changes = data["entry"][0]["changes"][0]
+        except KeyError:
+            changes = data["entry"]["changes"][0]
+        update_status(changes)
+    return
 
 
 def send_response(receiver, message):
