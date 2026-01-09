@@ -166,7 +166,7 @@ def post():
                 save_incoming_message(message, message_type, message_body, reply_to_message_id, is_reply)
            
                 sender = message["from"]
-                text = message
+                text = message_body
 
                 msg = ""
                 
