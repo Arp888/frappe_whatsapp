@@ -174,7 +174,13 @@ def post():
                 clean_text = user_input.replace(" ", "").lower()
 
                 if clean_text in ["in", "checkin", "out", "checkout", "masuk", "pulang"]:
-                    post_payload_to_n8n_webhook(data)
+                    frappe.enqueue(
+                        post_payload_to_n8n_webhook,
+                        data=data,
+                        queue='long', # Gunakan antrean 'long' untuk proses yang melibatkan network request
+                        timeout=300
+                    )
+                    # post_payload_to_n8n_webhook(data)
                     return "OK"
 
                 elif text.lower() == "hello":
@@ -234,7 +240,13 @@ def post():
                     message_body = f"Latitude: {latitude}, Longitude: {longitude}"
 
                     save_incoming_message(message, message_type, message_body, reply_to_message_id, is_reply)
-                    post_payload_to_n8n_webhook(data)
+                    # post_payload_to_n8n_webhook(data)
+                    frappe.enqueue(
+                        post_payload_to_n8n_webhook,
+                        data=data,
+                        queue='long', # Gunakan antrean 'long' untuk proses yang melibatkan network request
+                        timeout=300
+                    )
                     return "OK"
                 except Exception as e:
                     frappe.log_error(f"Error pada location: {str(e)}", "Webhook Error")
