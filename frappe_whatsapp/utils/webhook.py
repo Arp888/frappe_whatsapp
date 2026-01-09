@@ -92,7 +92,10 @@ def post_payload_to_n8n_webhook(payload):
 
     """Forward request payload to n8n"""
     try:
-        n8n = get_n8n_settings()        
+        n8n = get_n8n_settings()      
+        if not n8n:
+            return 
+          
         headers = {
             "Content-Type": "application/json",
             n8n.name: n8n.token
