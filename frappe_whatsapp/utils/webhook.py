@@ -227,9 +227,12 @@ def post():
                     send_response(sender, msg)
 
             elif message_type == "location":
-                save_incoming_message(message, message_type, reply_to_message_id, is_reply)
-                post_payload_to_n8n_webhook(data)
-                return "OK"
+                try:
+                    save_incoming_message(message, message_type, reply_to_message_id, is_reply)
+                    post_payload_to_n8n_webhook(data)
+                    return "OK"
+                except Exception as e:
+                    frappe.log_error(f"Error pada location: {str(e)}", "Webhook Error")
 
             elif message_type == "reaction":
                 save_incoming_message(message, message_type, reply_to_message_id, is_reply)      
