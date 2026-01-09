@@ -409,7 +409,7 @@ def update_message_status(data):
 
 @frappe.whitelist(allow_guest=True)
 def send_response_to_meta():
-    payload = frappe.local.form_dict()   
+    payload = frappe.local.form_dict   
     if not payload:
         frappe.log_error(_("Payload not found"))
         return
