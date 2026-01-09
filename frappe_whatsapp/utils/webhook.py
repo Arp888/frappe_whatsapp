@@ -162,7 +162,8 @@ def post():
             reply_to_message_id = message["context"]["id"] if is_reply else None
   
             if message_type == "text":
-                save_incoming_message(message, message_type, reply_to_message_id, is_reply)
+                message_body = message["text"]["body"]
+                save_incoming_message(message, message_type, message_body, reply_to_message_id, is_reply)
            
                 sender = message["from"]
                 text = message
@@ -227,8 +228,12 @@ def post():
                     send_response(sender, msg)
 
             elif message_type == "location":
-                try:
-                    save_incoming_message(message, message_type, reply_to_message_id, is_reply)
+                try:    
+                    latitude = message["location"]["latitude"]
+                    longitude = message["location"]["longitude"]
+                    message_body = f"Latitude: {latitude}, Longitude: {longitude}"
+
+                    save_incoming_message(message, message_type, message_body, reply_to_message_id, is_reply)
                     post_payload_to_n8n_webhook(data)
                     return "OK"
                 except Exception as e:
@@ -282,7 +287,7 @@ def post():
                         message_doc.save()
 
             elif message_type == "button":
-                save_incoming_message(message, message_type, is_reply, reply_to_message_id)  
+                save_incoming_message(message, message_type, reply_to_message_id, is_reply)  
             
             else:
                 frappe.get_doc(
@@ -305,13 +310,13 @@ def post():
         update_status(changes)
     return
 
-def save_incoming_message(message, message_type, reply_to_message_id=None, is_reply=None):
+def save_incoming_message(message, message_type, message_body=None, reply_to_message_id=None, is_reply=None):
     return frappe.get_doc(
         {
             "doctype": "WhatsApp Message",
             "type": "Incoming",
             "from": message["from"],
-            "message": message,
+            "message": message_body,
             "message_id": message["id"],
             "reply_to_message_id": reply_to_message_id,
             "is_reply": is_reply,
