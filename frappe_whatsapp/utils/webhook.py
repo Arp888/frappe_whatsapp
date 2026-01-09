@@ -62,6 +62,20 @@ def get_n8n_settings():
         "token": n8n_token
     })
 
+def is_duplicate_request(wamid):
+    # Gunakan wamid sebagai key unik di cache
+    cache_key = f"ws_msg_{wamid}"
+    
+    # Cek apakah key sudah ada di Redis
+    if frappe.cache().get_value(cache_key):
+        return True
+    
+    # Simpan key ke Redis dengan masa berlaku (TTL) 600 detik (10 menit)
+    # Ini cukup untuk menahan retry otomatis dari WhatsApp
+    frappe.cache().set_value(cache_key, 1, expires_in_sec=600)
+    return False
+
+
 # def get_whatsapp_media(media_id):
 #     # Ambil Access Token dari sistem
 #     access_token = frappe.conf.get("whatsapp_access_token")
@@ -87,10 +101,7 @@ def get_n8n_settings():
 #     return None
 
 
-def post_payload_to_n8n_webhook(payload):
-    
-    frappe.log_error(message=frappe.as_json(payload), title="WhatsApp Webhook Payload")
-
+def post_payload_to_n8n_webhook(payload):    
     """Forward request payload to n8n"""
     try:
         n8n = get_n8n_settings()      
@@ -102,13 +113,6 @@ def post_payload_to_n8n_webhook(payload):
             "X-N8N-API-KEY": "99d30f1ca8248f10179b93dba9a177"
             # n8n.name: n8n.token
         }    
-        # forward paylod received from wa to n8n webhook
-        # response = make_post_request(
-        #     url=f"{n8n.url}/whatsapp/attendance",
-        #     data=json.dumps(payload),
-        #     headers=headers,
-        #     timeout=15
-        # )        
 
         response = requests.post(
             f"{n8n.url}/whatsapp/attendance", 
@@ -135,7 +139,6 @@ def post():
         frappe.log_error(_("Payload not found"))
         return
     
-    # data = frappe.local.form_dict
     data = json.loads(payload)
 
     frappe.get_doc(
@@ -152,8 +155,15 @@ def post():
     
     try:
         messages = data["entry"][0]["changes"][0]["value"].get("messages", [])
+        wamid = data['entry'][0]['changes'][0]['value']['messages'][0]['id']
+        
+        if is_duplicate_request(wamid):
+            return "OK (Duplicate Ignored)"
+    
     except KeyError:
         messages = data["entry"]["changes"][0]["value"].get("messages", [])
+        pass
+
 
     if messages:
         for message in messages:
@@ -180,7 +190,6 @@ def post():
                         queue='long', # Gunakan antrean 'long' untuk proses yang melibatkan network request
                         timeout=300
                     )
-                    # post_payload_to_n8n_webhook(data)
                     return "OK"
 
                 elif text.lower() == "hello":
@@ -240,7 +249,7 @@ def post():
                     message_body = f"Latitude: {latitude}, Longitude: {longitude}"
 
                     save_incoming_message(message, message_type, message_body, reply_to_message_id, is_reply)
-                    # post_payload_to_n8n_webhook(data)
+                    
                     frappe.enqueue(
                         post_payload_to_n8n_webhook,
                         payload=data,
