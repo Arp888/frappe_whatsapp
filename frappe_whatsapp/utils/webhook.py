@@ -101,13 +101,25 @@ def post_payload_to_n8n_webhook(payload):
             n8n.name: n8n.token
         }    
         # forward paylod received from wa to n8n webhook
-        response = make_post_request(
-            url=f"{n8n.url}/whatsapp/attendance",
-            data=json.dumps(payload),
-            headers=headers,
-            timeout=15
-        )        
-        return {"status": "Forwarded", "n8n_response": response}
+        # response = make_post_request(
+        #     url=f"{n8n.url}/whatsapp/attendance",
+        #     data=json.dumps(payload),
+        #     headers=headers,
+        #     timeout=15
+        # )        
+
+        response = requests.post(
+            f"{n8n.url}/whatsapp/attendance", 
+            data=json.dumps(payload), 
+            headers=headers, 
+            timeout=10
+        )
+    
+        # Memastikan request berhasil (status 200)
+        response.raise_for_status()
+        result = response.json()
+
+        return {"status": "Forwarded", "n8n_response": result}
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), str(e))
