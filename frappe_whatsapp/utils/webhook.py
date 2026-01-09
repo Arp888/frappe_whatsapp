@@ -98,7 +98,7 @@ def post_payload_to_n8n_webhook(payload):
             n8n.name: n8n.token
         }    
         # forward paylod received from wa to n8n webhook
-        response = frappe.make_post_request(
+        response = make_post_request(
             url=f"{n8n.url}/whatsapp/attendance",
             payload=json.dumps(payload),
             headers=headers,
