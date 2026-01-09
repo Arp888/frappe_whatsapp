@@ -216,8 +216,6 @@ def fetch():
             headers=headers,
         )
 
-        print(response)
-
         for template in response["data"]:
             # set flag to insert or update
             flags = 1
