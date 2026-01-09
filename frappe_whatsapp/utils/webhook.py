@@ -165,7 +165,7 @@ def post():
                 save_incoming_message(message, message_type, reply_to_message_id, is_reply)
            
                 sender = message["from"]
-                text = message["text"]["body"]
+                text = message
 
                 msg = ""
                 
@@ -308,7 +308,7 @@ def save_incoming_message(message, message_type, reply_to_message_id=None, is_re
             "doctype": "WhatsApp Message",
             "type": "Incoming",
             "from": message["from"],
-            "message": message["text"]["body"],
+            "message": message,
             "message_id": message["id"],
             "reply_to_message_id": reply_to_message_id,
             "is_reply": is_reply,
