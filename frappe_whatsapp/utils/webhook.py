@@ -53,7 +53,7 @@ def get_n8n_settings():
     if not n8n_settings:
         frappe.throw(_("n8n Settings not found."))
     
-    if not n8n_base_url | n8n_name | n8n_token:
+    if not n8n_base_url or not n8n_name or not n8n_token:
         frappe.throw(_("n8n configuration error."))    
     
     return frappe._dict({
