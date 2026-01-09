@@ -98,7 +98,8 @@ def post_payload_to_n8n_webhook(payload):
           
         headers = {
             "Content-Type": "application/json",
-            n8n.name: n8n.token
+            "X-N8N-API-KEY": "99d30f1ca8248f10179b93dba9a177"
+            # n8n.name: n8n.token
         }    
         # forward paylod received from wa to n8n webhook
         # response = make_post_request(
