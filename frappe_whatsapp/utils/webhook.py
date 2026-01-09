@@ -86,6 +86,7 @@ def get_n8n_settings():
 #         }
 #     return None
 
+
 def post_payload_to_n8n_webhook(payload):
     
     frappe.log_error(message=frappe.as_json(payload), title="WhatsApp Webhook Payload")
@@ -404,6 +405,47 @@ def update_message_status(data):
     if conversation:
         doc.conversation_id = conversation
     doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist(allow_guest=True)
+def send_response_to_meta():
+    payload = frappe.local.form_dict()   
+    if not payload:
+        frappe.log_error(_("Payload not found"))
+        return
+
+    settings = frappe.get_doc("WhatsApp Settings", "WhatsApp Settings")
+    token = settings.get_password("token")
+
+    headers = {
+        "authorization": f"Bearer {token}",
+        "content-type": "application/json",
+    }
+
+    try:
+        response = requests.post(
+            f"{settings.url}/{settings.version}/{settings.phone_id}/messages",
+            headers=headers,
+            data=json.dumps(payload),
+        )
+        
+        response.raise_for_status()
+        result = response.json()
+        
+        return result
+
+    except Exception as e:
+        res = frappe.flags.integration_request.json()["error"]
+        error_message = res.get("Error", res.get("message"))
+        frappe.get_doc(
+            {
+                "doctype": "WhatsApp Notification Log",
+                "template": "Text Message",
+                "meta_data": frappe.flags.integration_request.json(),
+            }
+        ).insert(ignore_permissions=True)
+
+        frappe.throw(msg=error_message, title=res.get("error_user_title", "Error"))
 
 
 class StockpileBalanceFilter(TypedDict):
