@@ -103,7 +103,7 @@ def post_payload_to_n8n_webhook(payload):
         # forward paylod received from wa to n8n webhook
         response = make_post_request(
             url=f"{n8n.url}/whatsapp/attendance",
-            payload=json.dumps(payload),
+            data=json.dumps(payload),
             headers=headers,
             timeout=15
         )        
