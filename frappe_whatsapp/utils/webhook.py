@@ -176,7 +176,7 @@ def post():
                 if clean_text in ["in", "checkin", "out", "checkout", "masuk", "pulang"]:
                     frappe.enqueue(
                         post_payload_to_n8n_webhook,
-                        data=data,
+                        payload=data,
                         queue='long', # Gunakan antrean 'long' untuk proses yang melibatkan network request
                         timeout=300
                     )
@@ -243,7 +243,7 @@ def post():
                     # post_payload_to_n8n_webhook(data)
                     frappe.enqueue(
                         post_payload_to_n8n_webhook,
-                        data=data,
+                        payload=data,
                         queue='long', # Gunakan antrean 'long' untuk proses yang melibatkan network request
                         timeout=300
                     )
